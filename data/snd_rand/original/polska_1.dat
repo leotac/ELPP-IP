@@ -1,0 +1,49 @@
+12 36
+Gdansk
+Bydgoszcz
+Kolobrzeg
+Katowice
+Krakow
+Bialystok
+Lodz
+Poznan
+Rzeszow
+Szczecin
+Warsaw
+Wroclaw
+Gdansk Warsaw 5000
+Warsaw Gdansk 10000
+Gdansk Kolobrzeg 2500
+Kolobrzeg Gdansk 10000
+Bydgoszcz Kolobrzeg 2500
+Kolobrzeg Bydgoszcz 10000
+Bydgoszcz Poznan 2500
+Poznan Bydgoszcz 5000
+Bydgoszcz Warsaw 2500
+Warsaw Bydgoszcz 5000
+Kolobrzeg Szczecin 10000
+Szczecin Kolobrzeg 10000
+Katowice Krakow 10000
+Krakow Katowice 5000
+Katowice Lodz 5000
+Lodz Katowice 2500
+Katowice Wroclaw 10000
+Wroclaw Katowice 5000
+Krakow Rzeszow 1000
+Rzeszow Krakow 10000
+Krakow Warsaw 10000
+Warsaw Krakow 5000
+Bialystok Rzeszow 1000
+Rzeszow Bialystok 5000
+Bialystok Warsaw 10000
+Warsaw Bialystok 10000
+Lodz Warsaw 2500
+Warsaw Lodz 5000
+Lodz Wroclaw 10000
+Wroclaw Lodz 5000
+Poznan Szczecin 10000
+Szczecin Poznan 2500
+Poznan Wroclaw 5000
+Wroclaw Poznan 10000
+Gdansk Bialystok 5000
+Bialystok Gdansk 10000

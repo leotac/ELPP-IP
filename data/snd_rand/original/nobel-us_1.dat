@@ -1,0 +1,57 @@
+14 42
+PaloAlto
+SanDiego
+Boulder
+Washington
+Atlanta
+UrbanaChampaign
+AnnArbor
+Lincoln
+Princeton
+Ithaca
+Pittsburgh
+Houston
+SaltLakeCity
+Seattle
+PaloAlto SanDiego 2500
+SanDiego PaloAlto 10000
+PaloAlto SaltLakeCity 10000
+SaltLakeCity PaloAlto 5000
+PaloAlto Seattle 10000
+Seattle PaloAlto 5000
+SanDiego Houston 2500
+Houston SanDiego 2500
+SanDiego Seattle 10000
+Seattle SanDiego 1000
+Boulder Lincoln 10000
+Lincoln Boulder 5000
+Boulder Houston 1000
+Houston Boulder 5000
+Boulder SaltLakeCity 5000
+SaltLakeCity Boulder 10000
+Washington Princeton 10000
+Princeton Washington 5000
+Washington Ithaca 2500
+Ithaca Washington 5000
+Washington Houston 5000
+Houston Washington 2500
+Atlanta Pittsburgh 2500
+Pittsburgh Atlanta 10000
+Atlanta Houston 5000
+Houston Atlanta 1000
+UrbanaChampaign Lincoln 2500
+Lincoln UrbanaChampaign 2500
+UrbanaChampaign Pittsburgh 5000
+Pittsburgh UrbanaChampaign 10000
+UrbanaChampaign Seattle 5000
+Seattle UrbanaChampaign 5000
+AnnArbor Princeton 10000
+Princeton AnnArbor 10000
+AnnArbor Ithaca 5000
+Ithaca AnnArbor 2500
+AnnArbor SaltLakeCity 5000
+SaltLakeCity AnnArbor 10000
+Princeton Pittsburgh 5000
+Pittsburgh Princeton 10000
+Ithaca Pittsburgh 2500
+Pittsburgh Ithaca 10000

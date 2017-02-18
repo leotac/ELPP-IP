@@ -1,0 +1,227 @@
+50 176
+Aachen
+Augsburg
+Bayreuth
+Berlin
+Bielefeld
+Braunschweig
+Bremen
+Bremerhaven
+Chemnitz
+Darmstadt
+Dortmund
+Dresden
+Duesseldorf
+Erfurt
+Essen
+Flensburg
+Frankfurt
+Freiburg
+Fulda
+Giessen
+Greifswald
+Hamburg
+Hannover
+Kaiserslautern
+Karlsruhe
+Kassel
+Kempten
+Kiel
+Koblenz
+Koeln
+Konstanz
+Leipzig
+Magdeburg
+Mannheim
+Muenchen
+Muenster
+Norden
+Nuernberg
+Oldenburg
+Osnabrueck
+Passau
+Regensburg
+Saarbruecken
+Schwerin
+Siegen
+Stuttgart
+Trier
+Ulm
+Wesel
+Wuerzburg
+Essen Duesseldorf 5000
+Duesseldorf Essen 5000
+Essen Dortmund 5000
+Dortmund Essen 5000
+Essen Wesel 8000
+Wesel Essen 8000
+Duesseldorf Koeln 8000
+Koeln Duesseldorf 8000
+Koeln Aachen 5000
+Aachen Koeln 5000
+Koeln Koblenz 5000
+Koblenz Koeln 5000
+Dortmund Muenster 2400
+Muenster Dortmund 2400
+Dortmund Siegen 5000
+Siegen Dortmund 5000
+Dortmund Kassel 8000
+Kassel Dortmund 8000
+Aachen Wesel 2000
+Wesel Aachen 2000
+Aachen Trier 8000
+Trier Aachen 8000
+Muenster Bielefeld 8000
+Bielefeld Muenster 8000
+Muenster Osnabrueck 5000
+Osnabrueck Muenster 5000
+Koblenz Siegen 5000
+Siegen Koblenz 5000
+Koblenz Frankfurt 2400
+Frankfurt Koblenz 2400
+Koblenz Kaiserslautern 2000
+Kaiserslautern Koblenz 2000
+Koblenz Trier 2000
+Trier Koblenz 2000
+Siegen Bielefeld 2400
+Bielefeld Siegen 2400
+Siegen Giessen 2400
+Giessen Siegen 2400
+Wesel Oldenburg 8000
+Oldenburg Wesel 8000
+Wesel Norden 8000
+Norden Wesel 8000
+Berlin Leipzig 8000
+Leipzig Berlin 8000
+Berlin Dresden 2000
+Dresden Berlin 2000
+Berlin Schwerin 5000
+Schwerin Berlin 5000
+Berlin Magdeburg 8000
+Magdeburg Berlin 8000
+Berlin Greifswald 8000
+Greifswald Berlin 8000
+Leipzig Dresden 5000
+Dresden Leipzig 5000
+Leipzig Erfurt 2000
+Erfurt Leipzig 2000
+Leipzig Magdeburg 5000
+Magdeburg Leipzig 5000
+Leipzig Bayreuth 2000
+Bayreuth Leipzig 2000
+Dresden Erfurt 5000
+Erfurt Dresden 5000
+Dresden Chemnitz 5000
+Chemnitz Dresden 5000
+Erfurt Chemnitz 2000
+Chemnitz Erfurt 2000
+Erfurt Kassel 8000
+Kassel Erfurt 8000
+Erfurt Wuerzburg 8000
+Wuerzburg Erfurt 8000
+Chemnitz Bayreuth 8000
+Bayreuth Chemnitz 8000
+Schwerin Magdeburg 5000
+Magdeburg Schwerin 5000
+Schwerin Greifswald 2000
+Greifswald Schwerin 2000
+Schwerin Hamburg 2400
+Hamburg Schwerin 2400
+Schwerin Kiel 5000
+Kiel Schwerin 5000
+Magdeburg Braunschweig 5000
+Braunschweig Magdeburg 5000
+Hamburg Kiel 2000
+Kiel Hamburg 2000
+Hamburg Hannover 5000
+Hannover Hamburg 5000
+Hamburg Braunschweig 8000
+Braunschweig Hamburg 8000
+Bremen Oldenburg 2000
+Oldenburg Bremen 2000
+Bremen Bremerhaven 8000
+Bremerhaven Bremen 8000
+Bremen Hannover 8000
+Hannover Bremen 8000
+Kiel Flensburg 2000
+Flensburg Kiel 2000
+Oldenburg Norden 2000
+Norden Oldenburg 2000
+Oldenburg Osnabrueck 5000
+Osnabrueck Oldenburg 5000
+Flensburg Bremerhaven 8000
+Bremerhaven Flensburg 8000
+Hannover Bielefeld 8000
+Bielefeld Hannover 8000
+Hannover Braunschweig 5000
+Braunschweig Hannover 5000
+Hannover Osnabrueck 8000
+Osnabrueck Hannover 8000
+Bielefeld Braunschweig 2400
+Braunschweig Bielefeld 2400
+Braunschweig Kassel 8000
+Kassel Braunschweig 8000
+Kassel Giessen 8000
+Giessen Kassel 8000
+Kassel Fulda 5000
+Fulda Kassel 5000
+Frankfurt Darmstadt 8000
+Darmstadt Frankfurt 8000
+Frankfurt Giessen 8000
+Giessen Frankfurt 8000
+Frankfurt Fulda 8000
+Fulda Frankfurt 8000
+Darmstadt Mannheim 5000
+Mannheim Darmstadt 5000
+Darmstadt Kaiserslautern 8000
+Kaiserslautern Darmstadt 8000
+Mannheim Karlsruhe 5000
+Karlsruhe Mannheim 5000
+Kaiserslautern Saarbruecken 2400
+Saarbruecken Kaiserslautern 2400
+Kaiserslautern Karlsruhe 8000
+Karlsruhe Kaiserslautern 8000
+Giessen Fulda 8000
+Fulda Giessen 8000
+Trier Saarbruecken 8000
+Saarbruecken Trier 8000
+Fulda Wuerzburg 8000
+Wuerzburg Fulda 8000
+Saarbruecken Karlsruhe 2000
+Karlsruhe Saarbruecken 2000
+Stuttgart Karlsruhe 5000
+Karlsruhe Stuttgart 5000
+Stuttgart Ulm 8000
+Ulm Stuttgart 8000
+Stuttgart Konstanz 2000
+Konstanz Stuttgart 2000
+Stuttgart Wuerzburg 2400
+Wuerzburg Stuttgart 2400
+Karlsruhe Freiburg 8000
+Freiburg Karlsruhe 8000
+Ulm Augsburg 2000
+Augsburg Ulm 2000
+Konstanz Freiburg 8000
+Freiburg Konstanz 8000
+Konstanz Kempten 5000
+Kempten Konstanz 5000
+Muenchen Augsburg 2400
+Augsburg Muenchen 2400
+Muenchen Kempten 8000
+Kempten Muenchen 8000
+Muenchen Passau 2000
+Passau Muenchen 2000
+Muenchen Nuernberg 5000
+Nuernberg Muenchen 5000
+Muenchen Regensburg 2000
+Regensburg Muenchen 2000
+Augsburg Wuerzburg 2000
+Wuerzburg Augsburg 2000
+Passau Regensburg 2000
+Regensburg Passau 2000
+Nuernberg Bayreuth 5000
+Bayreuth Nuernberg 5000
+Nuernberg Wuerzburg 2400
+Wuerzburg Nuernberg 2400
+Nuernberg Regensburg 2000
+Regensburg Nuernberg 2000
