@@ -5,11 +5,12 @@
 # Cplex
 # ------------------------
 
-SYSTEM     = x86-64_sles10_4.1
+#SYSTEM     = x86-64_sles10_4.1
+SYSTEM     = x86-64_linux
 LIBFORMAT  = static_pic
 
-CPLEXDIR      = /opt/ibm/cplex
-CONCERTDIR    = /opt/ibm/concert
+CPLEXDIR      = /opt/ibm/cplex126
+CONCERTDIR    = /opt/ibm/concert126
 
 CPLEXBINDIR   = $(CPLEXDIR)/bin/$(BINDIST)
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
