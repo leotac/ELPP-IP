@@ -10,6 +10,10 @@
 #include <map>
 #include <unordered_map>
 #include <string>
+#include <lemon/time_measure.h>
+
+lemon::Timer global_timer;
+lemon::Timer solve_timer;
 
 using namespace std;
 typedef unordered_map<NODE_PAIR,IloNumVar> ARC_VARS;
