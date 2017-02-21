@@ -25,13 +25,10 @@ int main(int argc, char** argv)
 {
    srand(2);
    string filename = "";
-   string infodir = "";
    string st_filename ="";
    bool bounds = false;
-   //int formulation = 1;
    bool help = false;
    bool relax = false;
-   bool all = false;
    vector<NODE> origins;
    vector<NODE> destinations;
    vector<pair<NODE,NODE>> st_pairs;
@@ -42,10 +39,8 @@ int main(int argc, char** argv)
    int max_cuts = 1;
    double epsilon = 0.001;
    
-   bool append = false;
-
    int o = 0;
-   while ((o = getopt(argc, argv, "f:p:i:c:k:m:e:n:s:t:T:a::b::r::x::")) != -1)
+   while ((o = getopt(argc, argv, "f:p:c:k:m:e:n:s:t:T:a::b::r::")) != -1)
       switch (o)
       {
          case 'f':
@@ -53,12 +48,6 @@ int main(int argc, char** argv)
             break;
          case 'p':
             st_filename = optarg;
-            break;
-         case 'i':
-            infodir = optarg;
-            break;
-         case 'a':
-            all = true;
             break;
          case 'c':
             formulations.push_back((ElppForm) atoi(optarg));
@@ -90,9 +79,6 @@ int main(int argc, char** argv)
          case 'r':
             relax = true; 
             break;
-         case 'x':
-            append = true; 
-            break;
          default:
             help = true;
             break;
@@ -101,24 +87,42 @@ int main(int argc, char** argv)
    if ( filename == "" || help == true )
    {
       cout << "Usage: " << argv[0] << " -f <file_name> [other options]" << endl;
-      cout << "If no origin(s) and/or destination(s) are specified, all combinations are solved." << endl;
+      cout << "Note: if no origin(s) and/or destination(s) are specified, all combinations are solved." << endl;
       cout << "Options:" << endl;
       cout << "-f\t(mandatory) name of data file." << endl;
-      cout << "-p\t(optional) name of file with a list of (s,t) pairs. If not provided, try to infer from the data file." << endl;
-      cout << "-i\tdirectory of the info file (default: none)." << endl;
-      cout << "-T\ttime limit (default: 1200 seconds)." << endl;
-      cout << "-c\tsubtour elimination constraints:\n\t   0: None\n\t   1: MCF [default]\n\t   2: Separation via Strong Components\n";
-      cout << "\t   3: Separation via Min-Cut\n\t   4: SF\n\t   5: RLT\n\t   6: MTZ\n\t   7: DL\n\t   8: DFJ(?)\n\t   9: MCFsep" << endl;
-      cout << "-k\tstop after k problems have been solved" << endl;
-      cout << "-e\tviolation tolerance" << endl;
-      cout << "-m\tmax number of cuts to be added in a callback. set -1 to add all violated inequalities (default: 1)" << endl;
-      cout << "-b\tread arc variables bounds from data file" << endl;
+      cout << "-p\tname of file with a list of (s,t) pairs." << endl;
       cout << "-s\torigin(s)\t(can specify more than one)" << endl;
       cout << "-t\tdestination(s)\t(can specify more than one)" << endl;
-      cout << "-a\ttry all-to-all (s,t) pairs" << endl;
       cout << "-n\tuse a set of random origins and/or destinations of cardinality n and solve for all combinations [O(n^2) problems]" << endl;
+      cout << "-T\ttime limit (default: 1200 seconds)." << endl;
+      cout << "-c\tsubtour elimination constraints (can specify more than one):\n\t   0: None\n\t   1: MCF\n\t   2: Separation via Strong Components [default]\n";
+      cout << "\t   3: Separation via Min-Cut\n\t   4: SF\n\t   5: RLT\n\t   6: MTZ\n\t   7: DL\n\t   8: DFJ(?)\n\t   9: MCFsep" << endl;
+      cout << "-k\tstop after k problems have been solved" << endl;
+      cout << "-e\tcut violation tolerance" << endl;
+      cout << "-m\tmax number of cuts to be added in a callback. set -1 to add all violated inequalities (default: 1)" << endl;
+      cout << "-b\tread arc variables bounds from data file" << endl;
       cout << "-r\tsolve LP relaxation" << endl;
-      cout << "-x\tappend to existing info file" << endl;
+      cout << endl << "Examples:" << endl;
+      cout << "\t" << argv[0] << " -f data/toy.dat" << endl;
+      cout << "\t\tcompute the Longest Path over the graph in toy.dat" << endl;
+      cout << "\t\tfor all possible (s,t) pairs with the default formulation (SC)" << endl;
+      cout << "\t" << argv[0] << " -f data/toy.dat -s 1 -t 5 -c 2" << endl;
+      cout << "\t\tcompute the Longest Path over the graph in toy.dat" << endl;
+      cout << "\t\tfrom node 1 to node 5 with formulation 2 (SC)" << endl;
+      cout << "\t" << argv[0] << " -f data/toy.dat -s 1 -n 4 -c 1 -c 3" << endl;
+      cout << "\t\tcompute the Longest Path over the graph in toy.dat" << endl;
+      cout << "\t\tfrom node 1 to 4 other randomly selected nodes" << endl;
+      cout << "\t\twith formulation 1 (MCF) and formulation 3 (Min-Cut)" << endl;
+      cout << "\t" << argv[0] << " -f data/toy.dat -p data/toy.st" << endl;
+      cout << "\t\tcompute the Longest Path over the graph in toy.dat" << endl;
+      cout << "\t\tfor all the (s,t) pairs loaded from toy.st" << endl;
+      cout << "\t\twith the default formulation (SC)" << endl;
+      cout << "\t" << argv[0] << " -f data/toy.dat -n 4" << endl;
+      cout << "\t\tcompute the Longest Path over the graph in toy.dat" << endl;
+      cout << "\t\tfor all the (s,t) pairs connecting 4 randomly selected" << endl;
+      cout << "\t\tnodes to 4 other randomly selected nodes" << endl;
+      cout << "\t\twith formulation 1 (MCF) and formulation 3 (Min-Cut)" << endl;
+
       exit(0);
    }
 
@@ -136,11 +140,6 @@ int main(int argc, char** argv)
       instance_name = stripped.substr(lastslash + 1, string::npos);
    else
       instance_name = stripped; //bah
-
-   /* try to infer st filename */
-   if(st_filename == "")
-      st_filename = stripped + ".st";
-
 
    cout << "Selected formulations:"<<endl;
    for(ElppForm form : formulations)
@@ -181,8 +180,8 @@ int main(int argc, char** argv)
       }
    if(formulations.size() == 0)
    {
-      cout << "None selected. Using MCF." << endl;
-      formulations.push_back(ElppForm::MCF);
+      cout << "None selected. Using Strong Component (SC)." << endl;
+      formulations.push_back(ElppForm::SC);
    }
 
    /* Read data file */
@@ -240,7 +239,7 @@ int main(int argc, char** argv)
       }
 
    /* Add (s,t) pairs from .st file */
-   if(!all && st_pairs.size() == 0 && destinations.size() == 0)
+   if(st_pairs.size() == 0 && destinations.size() == 0)
    {
       ifstream st_file;
       st_file.open(st_filename);
@@ -292,7 +291,7 @@ int main(int argc, char** argv)
       }
    }
  
-   
+
    /* Add all combinations to set of (s,t) pairs */ 
    for(NODE s : origins)
       for(NODE t : destinations)
@@ -314,21 +313,16 @@ int main(int argc, char** argv)
       if(s != t && !stop)
       {
          cout << "----" << s << " " << t << "----" << k << endl;
-         ++k;
          for(ElppForm form : formulations)
          {
             IloEnv env;
             lemon::Timer time;
             if((/*MCF*/ form == ElppForm::MCF && n >= 100) 
-                  || (/*MCFsep*/ relax && form == ElppForm::MCFsep && n >= 500) 
-                  //|| (/*MCFsep*/ !relax && form == ElppForm::MCFsep && n >= 500) 
-                  
-                  )
+                  || (/*MCFsep*/ relax && form == ElppForm::MCFsep && n >= 500))
             {
                cout << which(form) << "\t: - -" << endl;
             }
             else{
-
                ElppSolverCplex elpp_solver = ElppSolverCplex(env, NODE_PAIR(s,t), nodes, arcs, out_adj_list, in_adj_list, form, relax, timelimit, epsilon, max_cuts);
                if(bounds)
                   elpp_solver.update_problem(cost, lbs, ubs);
@@ -350,9 +344,9 @@ int main(int argc, char** argv)
             }
             env.end();
          }
+         ++k;
          if(k == K)
             stop=true;
-
 
       }   
    }
