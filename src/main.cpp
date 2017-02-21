@@ -11,6 +11,7 @@
 /* user defined includes */
 #include "type.h"
 #include "elpp.h"
+#include "graph.h"
 #include <algorithm>
 #include <random>
 #include <map>
@@ -184,6 +185,10 @@ int main(int argc, char** argv)
       formulations.push_back(ElppForm::SC);
    }
 
+
+
+   std::shared_ptr<Graph> G = std::make_shared<Graph>();
+
    /* Read data file */
    ifstream infile(filename);
    if (!infile.good())
@@ -196,19 +201,17 @@ int main(int argc, char** argv)
    infile >> n >> m;
    //cout << n << " " << m << endl;
    
-   vector<NODE> nodes;
-   nodes.reserve(n);
-   vector<NODE_PAIR> arcs;
-   arcs.reserve(m);
+   //vector<NODE> nodes;
+   //nodes.reserve(n);
+   //vector<NODE_PAIR> arcs;
+   //arcs.reserve(m);
    map<NODE_PAIR, double> ubs, lbs;
    
    for(int k=0;k<n;k++)
    {
       NODE i;
       infile >> i;
-      nodes.push_back(i);
-      out_adj_list[i] = vector<NODE>();
-      in_adj_list[i] = vector<NODE>();
+      G->add_node(i);
    }
 
    for(int k=0;k<m;k++)
@@ -216,10 +219,8 @@ int main(int argc, char** argv)
       NODE i,j;
       double c;
       infile >> i >> j >> c;
-      out_adj_list[i].push_back(j);
-      in_adj_list[j].push_back(i);
+      G->add_arc(i,j);
       cost[NODE_PAIR(i,j)] = c;
-      arcs.push_back(NODE_PAIR(i,j));
    }
 
    if(bounds) 
@@ -245,7 +246,7 @@ int main(int argc, char** argv)
       st_file.open(st_filename);
       NODE s, t;
       while(st_file >> s >> t)
-         if(find(nodes.begin(), nodes.end(), s) != nodes.end() && find(nodes.begin(), nodes.end(), t) != nodes.end())
+         if(find(G->nodes().begin(), G->nodes().end(), s) != G->nodes().end() && find(G->nodes().begin(), G->nodes().end(), t) != G->nodes().end())
             st_pairs.push_back(pair<NODE,NODE>(s,t));
       st_file.close();
    }
@@ -256,7 +257,7 @@ int main(int argc, char** argv)
    /* Build set of origins*/
    bool ok = true;
    for(NODE s : origins)
-      if (find(nodes.begin(), nodes.end(), s) == nodes.end())
+      if (find(G->nodes().begin(), G->nodes().end(), s) == G->nodes().end())
       {
          cout << s << " not in graph!" << endl;
          ok = false;
@@ -264,8 +265,8 @@ int main(int argc, char** argv)
       }
    if((st_pairs.size() == 0 && origins.size() == 0) || !ok)
    {
-      origins = nodes;
-      if(pairs>0 && pairs<(int)origins.size())
+      origins = G->nodes();
+      if(pairs>0 && pairs<int(origins.size()))
       {
          shuffle(origins.begin(), origins.end(), rnd_engine);
          origins.resize(pairs);
@@ -275,7 +276,7 @@ int main(int argc, char** argv)
    /* Build set of destinations*/
    ok = true;
    for(NODE t : destinations)
-      if (std::find(nodes.begin(), nodes.end(), t) == nodes.end())
+      if (std::find(G->nodes().begin(), G->nodes().end(), t) == G->nodes().end())
       {
          cout << t << " not in graph!" << endl;
          ok = false;
@@ -283,8 +284,8 @@ int main(int argc, char** argv)
       }
    if((st_pairs.size() == 0 && destinations.size() == 0) || !ok)
    {
-      destinations = nodes;
-      if(pairs>0 && pairs<(int)destinations.size())
+      destinations = G->nodes();
+      if(pairs>0 && pairs<int(destinations.size()))
       {
          shuffle(destinations.begin(), destinations.end(), rnd_engine);
          destinations.resize(pairs);
@@ -299,7 +300,7 @@ int main(int argc, char** argv)
 
    cout << "Set of " << st_pairs.size() << " s-t pairs." << endl;
    if(K == 0) 
-      K = (int) st_pairs.size();
+      K = int(st_pairs.size());
    else
       cout << "[Solving at most " << K << ".]" << endl;
 
@@ -323,7 +324,7 @@ int main(int argc, char** argv)
                cout << which(form) << "\t: - -" << endl;
             }
             else{
-               ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), nodes, arcs, out_adj_list, in_adj_list, form, relax, timelimit, epsilon, max_cuts);
+               ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), G, form, relax, timelimit, epsilon, max_cuts);
                if(bounds)
                   elpp_solver.update_problem(cost, lbs, ubs);
                else

@@ -7,7 +7,9 @@
 #define __ELPP_H__
 
 #include "type.h"
+#include "graph.h"
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <lemon/time_measure.h>
@@ -23,10 +25,7 @@ class ElppSolver
       ElppSolver(){};
       ElppSolver(IloEnv env,
             NODE_PAIR st_,
-            const vector<NODE>& nodes_, 
-            const vector<NODE_PAIR>&  arcs_,
-            const map<NODE, vector<NODE>>& out_adj_list_,
-            const map<NODE, vector<NODE>>& in_adj_list_,
+            std::shared_ptr<Graph> g_ptr, 
             ElppForm formulation,
             bool relax,
             int timelimit,
@@ -110,10 +109,7 @@ class ElppSolver
 
       //Graph structure
       NODE_PAIR st;
-      vector<NODE>                       nodes;         /* array of nodes */
-      vector<NODE_PAIR>                  arcs;          /* arcs */
-      map<NODE, vector<NODE>>            out_adj_list;      /* adjacency list */
-      map<NODE, vector<NODE>>            in_adj_list;      /* adjacency list */
+      std::shared_ptr<Graph> G;
 
 };
 

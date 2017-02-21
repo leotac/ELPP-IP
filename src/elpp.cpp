@@ -25,22 +25,16 @@ using namespace lemon;
 ElppSolver::ElppSolver(
       IloEnv env,
       NODE_PAIR st_,
-      const vector<NODE>& nodes_, 
-      const vector<NODE_PAIR>&  arcs_,
-      const map<NODE, vector<NODE>>& out_adj_list_,
-      const map<NODE, vector<NODE>>& in_adj_list_,
+      std::shared_ptr<Graph> g_ptr, 
       ElppForm formulation_,
       bool relax_,
       int timelimit_,
       double epsilon,
-      int max_cuts_)
+      int max_cuts_) : G(g_ptr)
 {
    // Initialize graph structures
    st = st_;
-   nodes = nodes_;
-   arcs = arcs_;
-   out_adj_list = out_adj_list_; 
-   in_adj_list = in_adj_list_; 
+
    // Initialize Cplex structures
    model = IloModel(env);
    extra_con = IloRange();
@@ -59,7 +53,7 @@ ElppSolver::ElppSolver(
    char var_name[255];
    x_vararray = IloNumVarArray(env);
    int idx = 0;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       IloNumVar var;
       snprintf(var_name, 255, "sigma_%d_%d", arc.first,arc.second);
@@ -75,7 +69,6 @@ ElppSolver::ElppSolver(
    }
 
    LOG << "Building problem...";
-   //LOG << 4*sizeof(IloNumVar::ImplClass)*((nodes.size()-1)*arcs.size() + arcs.size() + nodes.size())<< " Bytes" << endl;
    switch(formulation)
    {
       case MCF:
@@ -148,8 +141,8 @@ ElppSolver::ElppSolver(
       case MinCut: /* Separation with Min-Cut*/
       case MCFsep: /* Separation with Min-Cut for MCF*/
       case DFJ: /* Separation with SC for DFJ*/
-         cplex.use(StrongComponentLazyCallback(env,nodes, arcs, st, sigma_vars, qq_var, zz_var, out_adj_list, in_adj_list, x_vararray, index, tol, max_cuts, formulation));
-         cplex.use(ElppCutCallback(env,nodes, arcs, st, sigma_vars, qq_var, zz_var, out_adj_list, in_adj_list, x_vararray, index, tol, max_cuts, formulation));
+         cplex.use(StrongComponentLazyCallback(env, G, st, sigma_vars, qq_var, zz_var, x_vararray, index, tol, max_cuts, formulation));
+         cplex.use(ElppCutCallback(env, G, st, sigma_vars, qq_var, zz_var, x_vararray, index, tol, max_cuts, formulation));
          break;
       default:
          break;
@@ -175,7 +168,7 @@ void ElppSolver::build_problem_sec()
    /*******************/
 
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -189,32 +182,32 @@ void ElppSolver::build_problem_sec()
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
      {
      IloRange con;
      con = IloRange(env, -IloInfinity, 1.0);
 
-     for(auto j : out_adj_list.at(node)) 
+     for(auto j : G->outgoing_from(node)) 
         con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
      model.add(con);
      }
@@ -230,10 +223,10 @@ void ElppSolver::build_problem_mf(bool sep)
    NODE t = st.second;
 
 
-   LOG << arcs.size() << endl;
-   LOG << nodes.size() << endl;
-   LOG << "Number of variables to build: " << arcs.size() + arcs.size()*(nodes.size()-1) +  (nodes.size()-1)<< endl;
-   LOG << "Number of constraints to add each time: ~" << arcs.size() + nodes.size() << endl;
+   LOG << G->num_arcs() << endl;
+   LOG << G->num_nodes() << endl;
+   LOG << "Number of variables to build: " << G->num_arcs() + G->num_arcs()*(G->num_nodes()-1) +  (G->num_nodes()-1)<< endl;
+   LOG << "Number of constraints to add each time: ~" << G->num_arcs() + G->num_nodes() << endl;
 
    IloEnv env = model.getEnv();
    char var_name[255];
@@ -241,9 +234,9 @@ void ElppSolver::build_problem_mf(bool sep)
    // q[i,j,h]
    // (Imaginary) flow assigned to node h on arc (i,j)
    //unordered_map<TRIPLET,IloNumVar> qq_var;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
          if ( h != s )
          {
             snprintf(var_name, 255, "q_%d_%d_%d", arc.first,arc.second,h);
@@ -258,7 +251,7 @@ void ElppSolver::build_problem_mf(bool sep)
    // z[h]
    // Whether node h is used
    //unordered_map<NODE,IloNumVar> zz_var;
-   for (NODE h : nodes)
+   for (NODE h : G->nodes())
       if ( h != s) // Yes!
       {
          snprintf(var_name, 255, "z_%d", h);
@@ -274,7 +267,7 @@ void ElppSolver::build_problem_mf(bool sep)
    /*******************/
 
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -288,33 +281,33 @@ void ElppSolver::build_problem_mf(bool sep)
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
       con = IloRange(env, -IloInfinity, 1.0);
 
-      for(auto j : out_adj_list.at(node)) 
+      for(auto j : G->outgoing_from(node)) 
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
@@ -322,9 +315,9 @@ void ElppSolver::build_problem_mf(bool sep)
    {
       // Ham1
       // qq[h,i,j] <= sigma[i,j] (s,t)
-      for (auto arc : arcs)
+      for (auto& arc : G->arcs())
       {   
-         for (NODE h : nodes)
+         for (NODE h : G->nodes())
          {
             if(h != s)
             { 
@@ -340,7 +333,7 @@ void ElppSolver::build_problem_mf(bool sep)
 
       // Ham2
       // sum{(s,j) in A}qq[h,s,j] = z[h] (s,t)
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
       {
          if ( h != s)
          {
@@ -349,7 +342,7 @@ void ElppSolver::build_problem_mf(bool sep)
 
             con.setLinearCoef(zz_var[h],-1.0);
 
-            for(auto j : out_adj_list.at(s)) 
+            for(auto j : G->outgoing_from(s)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(s,j))],1.0);
 
             model.add(con);
@@ -358,14 +351,14 @@ void ElppSolver::build_problem_mf(bool sep)
 
       // Ham3
       // sum{(i,s) in A}qq[h,i,s] = 0
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
       {
          if ( h != s)
          {
             IloRange con;
             con = IloRange(env, 0.0, 0.0);
 
-            for(auto j : in_adj_list.at(s)) 
+            for(auto j : G->incoming_to(s)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,s))],1.0);
 
             model.add(con);
@@ -374,7 +367,7 @@ void ElppSolver::build_problem_mf(bool sep)
 
       // Ham4
       // sum{(i,h) in A}q[h,i,h] = z[h]
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
       {
          if ( h != s)
          {
@@ -383,7 +376,7 @@ void ElppSolver::build_problem_mf(bool sep)
 
             con.setLinearCoef(zz_var[h],-1.0);
 
-            for(auto j : in_adj_list.at(h)) 
+            for(auto j : G->incoming_to(h)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,h))],1.0);
 
             model.add(con);
@@ -392,14 +385,14 @@ void ElppSolver::build_problem_mf(bool sep)
 
       // Ham5
       // sum{(h,j) in A}q[h,h,j] = 0 
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
       {
          if ( h != s)
          {
             IloRange con;
             con = IloRange(env, 0.0, 0.0);
 
-            for(auto j : out_adj_list.at(h)) 
+            for(auto j : G->outgoing_from(h)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(h,j))],1.0);
 
             model.add(con);
@@ -408,17 +401,17 @@ void ElppSolver::build_problem_mf(bool sep)
 
       // Ham6
       // sum{(i,j) in A}qq[h,i,j] - sum{(j,i) in A}qq[h,j,i] = 0
-      for (NODE node : nodes)
+      for (NODE node : G->nodes())
       {
-         for (NODE h : nodes)
+         for (NODE h : G->nodes())
          {
             if ( h != s && node != h && node != s)
             {
                IloRange con;
                con = IloRange(env, 0.0, 0.0);
-               for(auto j : out_adj_list.at(node))
+               for(auto j : G->outgoing_from(node))
                   con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(node,j))],-1.0);
-               for(auto j : in_adj_list.at(node))
+               for(auto j : G->incoming_to(node))
                   con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,node))],1.0);
                model.add(con);
             }
@@ -428,7 +421,7 @@ void ElppSolver::build_problem_mf(bool sep)
       // Ham7
       // sum{(i,h) in A}sigma[i,h] = z[h]
       // if node h is reached, z[h] = 1
-      for (NODE h : nodes)
+      for (NODE h : G->nodes())
       {
          if ( h != s)
          {
@@ -437,7 +430,7 @@ void ElppSolver::build_problem_mf(bool sep)
 
             con.setLinearCoef(zz_var[h],-1.0);
 
-            for(auto j : in_adj_list.at(h)) 
+            for(auto j : G->incoming_to(h)) 
                con.setLinearCoef(sigma_vars[NODE_PAIR(j,h)],1.0);
             model.add(con);
          }
@@ -461,19 +454,19 @@ void ElppSolver::build_problem_sf()
    // u[i,j] 
    // (Imaginary) flow assigned on arc (i,j)
    //unordered_map<NODE_PAIR,IloNumVar> u_var;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       snprintf(var_name, 255, "q_%d_%d", arc.first,arc.second);
       IloNumVar var;
       var = IloNumVar(env,var_name);
-      var.setBounds(0, (int)nodes.size()-1);
+      var.setBounds(0, int(G->num_nodes())-1);
       u_var[arc] = var;
    }
 
    // z[h]
    // Whether node h is used
    //unordered_map<NODE,IloNumVar> zz_var;
-   for (NODE h : nodes)
+   for (NODE h : G->nodes())
       if ( h != s )
       {
          snprintf(var_name, 255, "z_%d", h);
@@ -487,7 +480,7 @@ void ElppSolver::build_problem_sf()
    /* Add constraints */
    /*******************/
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -501,45 +494,45 @@ void ElppSolver::build_problem_sf()
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
       con = IloRange(env, -IloInfinity, 1.0);
 
-      for(auto j : out_adj_list.at(node)) 
+      for(auto j : G->outgoing_from(node)) 
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
    // SF1
    // q[i,j] <= (n-1)*sigma[i,j] (s,t)
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       IloRange con;
       con = IloRange(env, -IloInfinity, 0.0);
 
       con.setLinearCoef(u_var[arc],1.0);
-      con.setLinearCoef(sigma_vars[arc],-((int)nodes.size()-1));
+      con.setLinearCoef(sigma_vars[arc],-(int(G->num_nodes())-1));
       model.add(con);
    }
 
@@ -547,11 +540,11 @@ void ElppSolver::build_problem_sf()
    // sum{(s,j) in A}qq[s,j] = sum{h in V: h!=s}z[h] (s,t)
    con = IloRange(env, 0.0, 0.0);
 
-   for (NODE h : nodes)
+   for (NODE h : G->nodes())
       if ( h != s)
          con.setLinearCoef(zz_var[h],-1.0);
 
-   for(auto j : out_adj_list.at(s)) 
+   for(auto j : G->outgoing_from(s)) 
       con.setLinearCoef(u_var[NODE_PAIR(s,j)],1.0);
 
    model.add(con);
@@ -559,13 +552,13 @@ void ElppSolver::build_problem_sf()
    // SF2-bis
    // sum{(i,s) in A}qq[i,s] = 0
    con = IloRange(env, 0.0, 0.0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(u_var[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // SF3
    // sum{(i,h) in A}q[i,h] - sum{(h,j) in A}q[h,j] = z[h]
-   for (NODE h : nodes)
+   for (NODE h : G->nodes())
    {
       if ( h != s)
       {
@@ -574,10 +567,10 @@ void ElppSolver::build_problem_sf()
 
          con.setLinearCoef(zz_var[h],-1.0);
 
-         for(auto j : in_adj_list.at(h))
-            con.setLinearCoef(u_var[NODE_PAIR(j,h)],1.0);  // incoming
-         for(auto j : out_adj_list.at(h))
-            con.setLinearCoef(u_var[NODE_PAIR(h,j)],-1.0); // outgoing
+         for(auto j : G->incoming_to(h))
+            con.setLinearCoef(u_var[NODE_PAIR(j,h)],1.0);  // incoming_to
+         for(auto j : G->outgoing_from(h))
+            con.setLinearCoef(u_var[NODE_PAIR(h,j)],-1.0); // outgoing_from
 
          model.add(con);
       }
@@ -586,7 +579,7 @@ void ElppSolver::build_problem_sf()
    // SF4
    // sum{(i,h) in A}sigma[i,h] = z[h]
    // if node h is reached, z[h] = 1
-   for (NODE h : nodes)
+   for (NODE h : G->nodes())
    {
       if ( h != s)
       {
@@ -595,7 +588,7 @@ void ElppSolver::build_problem_sf()
 
          con.setLinearCoef(zz_var[h],-1.0);
 
-         for(auto j : in_adj_list.at(h)) 
+         for(auto j : G->incoming_to(h)) 
             con.setLinearCoef(sigma_vars[NODE_PAIR(j,h)],1.0);
          model.add(con);
       }
@@ -619,7 +612,7 @@ void ElppSolver::build_problem_rlt()
 
    // alpha[i,j] 
    unordered_map<NODE_PAIR,IloNumVar> alpha_var;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       snprintf(var_name, 255, "alpha_%d_%d", arc.first,arc.second);
       IloNumVar var;
@@ -630,7 +623,7 @@ void ElppSolver::build_problem_rlt()
 
    // beta[i,j] 
    unordered_map<NODE_PAIR,IloNumVar> beta_var;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       snprintf(var_name, 255, "beta_%d_%d", arc.first,arc.second);
       IloNumVar var;
@@ -644,7 +637,7 @@ void ElppSolver::build_problem_rlt()
    /* Add constraints */
    /*******************/
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -658,40 +651,40 @@ void ElppSolver::build_problem_rlt()
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
       con = IloRange(env, -IloInfinity, 1.0);
 
-      for(auto j : out_adj_list.at(node)) 
+      for(auto j : G->outgoing_from(node)) 
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
 
    // RLT1
    // alpha[i,j] = beta[i,j] + x[i,j]
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       IloRange con;
       con = IloRange(env, 0.0, 0.0);
@@ -704,18 +697,18 @@ void ElppSolver::build_problem_rlt()
 
    // RLT2
    // x[s,j] + sum{(i,j) in A: i<>s}alpha[i,j] - sum{(j,i) in A}beta[j,i] = 0;
-   for(auto j : out_adj_list.at(s))
+   for(auto j : G->outgoing_from(s))
       if(j!=t)
       {
          IloRange con;
          con = IloRange(env, 0.0, 0.0);
          con.setLinearCoef(sigma_vars[NODE_PAIR(s,j)], 1);
 
-         for(auto i : in_adj_list.at(j))
+         for(auto i : G->incoming_to(j))
             if(i!=s)
                con.setLinearCoef(alpha_var[NODE_PAIR(i,j)], 1);
 
-         for(auto i : out_adj_list.at(j))
+         for(auto i : G->outgoing_from(j))
             con.setLinearCoef(beta_var[NODE_PAIR(j,i)], -1);
 
          model.add(con);
@@ -723,15 +716,15 @@ void ElppSolver::build_problem_rlt()
 
    // RLT3
    // sum{(i,j) in A}alpha[i,j] - sum{(i,j) in A}beta[i,j]=0
-   for(auto j : nodes)
-      if( j!=s && j!=t && (find(out_adj_list.at(s).begin(),out_adj_list.at(s).end(),j) == out_adj_list.at(s).end()))
+   for(auto j : G->nodes())
+      if( j!=s && j!=t && (find(G->outgoing_from(s).begin(),G->outgoing_from(s).end(),j) == G->outgoing_from(s).end()))
       {
          IloRange con;
          con = IloRange(env, 0.0, 0.0);
-         for(auto i : in_adj_list.at(j))
+         for(auto i : G->incoming_to(j))
             con.setLinearCoef(alpha_var[NODE_PAIR(i,j)], 1);
 
-         for(auto i : out_adj_list.at(j))
+         for(auto i : G->outgoing_from(j))
             con.setLinearCoef(beta_var[NODE_PAIR(j,i)], -1);
 
          model.add(con);
@@ -739,7 +732,7 @@ void ElppSolver::build_problem_rlt()
 
 //   // RLT4
 //   // x[i,j] <= alpha[i,j]
-//   for (auto arc : arcs)
+//   for (auto& arc : G->arcs())
 //      if(arc.first!=s && arc.second!=s)
 //      {   
 //         IloRange con;
@@ -751,19 +744,19 @@ void ElppSolver::build_problem_rlt()
 
    // RLT5
    // alpha[i,j] <= (n-1)*x[i,j]
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
       if(arc.first!=s)
       {   
          IloRange con;
          con = IloRange(env, -IloInfinity, 0.0);
          con.setLinearCoef(alpha_var[arc], 1);
-         con.setLinearCoef(sigma_vars[arc],1.0-(int)nodes.size());
+         con.setLinearCoef(sigma_vars[arc],1.0 - int(G->num_nodes()));
          model.add(con);
       }
 
    // RLT6
    // x[i,j] <= beta[i,j]
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
       if(arc.first!=s && arc.second!=s)
       {   
          IloRange con;
@@ -775,19 +768,19 @@ void ElppSolver::build_problem_rlt()
 
 //   // RLT7
 //   // beta[i,j] <= (n-1)*x[i,j]
-//   for (auto arc : arcs)
+//   for (auto& arc : G->arcs())
 //      if(arc.first!=s)
 //      {   
 //         IloRange con;
 //         con = IloRange(env, -IloInfinity, 0.0);
 //         con.setLinearCoef(beta_var[arc], 1);
-//         con.setLinearCoef(sigma_vars[arc],1.0-(int)nodes.size());
+//         con.setLinearCoef(sigma_vars[arc],1.0-int(G->num_nodes()));
 //         model.add(con);
 //      }
 //
 //   // RLT8
 //   // alpha[i,j] >= beta[i,j]
-//   for (auto arc : arcs)
+//   for (auto& arc : G->arcs())
 //   {   
 //      IloRange con;
 //      con = IloRange(env, -IloInfinity, 0.0);
@@ -813,19 +806,19 @@ void ElppSolver::build_problem_mtz()
 
    // p[i] 
    // Label of node i 
-   for (auto i : nodes)
+   for (auto i : G->nodes())
    {   
       snprintf(var_name, 255, "p_%d", i);
       IloNumVar var;
       var = IloNumVar(env,var_name);
-      var.setBounds(0, (int)nodes.size());
+      var.setBounds(0, int(G->num_nodes()));
       p_var[i] = var;
    }
    /*******************/
    /* Add constraints */
    /*******************/
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -839,50 +832,50 @@ void ElppSolver::build_problem_mtz()
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
       con = IloRange(env, -IloInfinity, 1.0);
 
-      for(auto j : out_adj_list.at(node)) 
+      for(auto j : G->outgoing_from(node)) 
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
    // MTZ
    // p[i] - p[j] + (n-1)*x[i,j] >= (n-2);
-   for (NODE i : nodes)
+   for (NODE i : G->nodes())
    { 
       if(i!=s)
-         for(auto j : out_adj_list.at(i))
+         for(auto j : G->outgoing_from(i))
             if(j!=t)
             {
                IloRange con;
-               con = IloRange(env, -IloInfinity, (int)nodes.size()-2);
+               con = IloRange(env, -IloInfinity, int(G->num_nodes())-2);
 
                con.setLinearCoef(p_var[i],1.0);
                con.setLinearCoef(p_var[j],-1.0);
-               con.setLinearCoef(sigma_vars[NODE_PAIR(i,j)], ((int)nodes.size()) - 1.0);
+               con.setLinearCoef(sigma_vars[NODE_PAIR(i,j)], (int(G->num_nodes())) - 1.0);
                model.add(con);
             }
    }
@@ -905,19 +898,19 @@ void ElppSolver::build_problem_dl()
 
    // p[i] 
    // Label of node i 
-   for (auto i : nodes)
+   for (auto i : G->nodes())
    {   
       snprintf(var_name, 255, "p_%d", i);
       IloNumVar var;
       var = IloNumVar(env,var_name);
-      var.setBounds(0, (int)nodes.size());
+      var.setBounds(0, int(G->num_nodes()));
       p_var[i] = var;
    }
    /*******************/
    /* Add constraints */
    /*******************/
    // Flow conservation constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
 
@@ -931,53 +924,53 @@ void ElppSolver::build_problem_dl()
 
       con = IloRange(env, coeff, coeff);
 
-      for(auto j : out_adj_list.at(node))
+      for(auto j : G->outgoing_from(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
-      for(auto j : in_adj_list.at(node))
+      for(auto j : G->incoming_to(node))
          con.setLinearCoef(sigma_vars[NODE_PAIR(j,node)],-1.0);
       model.add(con);
    }
 
    // Outgoing degree constraints (on sigma)
-   for (NODE node : nodes)
+   for (NODE node : G->nodes())
    {
       IloRange con;
       con = IloRange(env, -IloInfinity, 1.0);
 
-      for(auto j : out_adj_list.at(node)) 
+      for(auto j : G->outgoing_from(node)) 
          con.setLinearCoef(sigma_vars[NODE_PAIR(node,j)],1.0);
       model.add(con);
    }
 
    // Incoming s = 0 
    IloRange con = IloRange(env, 0, 0);
-   for(auto j : in_adj_list.at(s)) 
+   for(auto j : G->incoming_to(s)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(j,s)],1.0);
    model.add(con);
 
    // Outgoing t = 0
    con = IloRange(env, 0, 0);
-   for(auto j : out_adj_list.at(t)) 
+   for(auto j : G->outgoing_from(t)) 
       con.setLinearCoef(sigma_vars[NODE_PAIR(t,j)],1.0);
    model.add(con);
 
    // DL
    // p[i] - p[j] + (n-1)*x[i,j] + (n-3)*x[j,i] >= (n-2) [important: s!=i, t!=j]
-   for (NODE i : nodes)
+   for (NODE i : G->nodes())
    { 
       if(i!=s)
-         for(auto j : out_adj_list.at(i))
+         for(auto j : G->outgoing_from(i))
             if(t!=j)
             {
                IloRange con;
-               con = IloRange(env, -IloInfinity, (int)nodes.size()-2);
+               con = IloRange(env, -IloInfinity, int(G->num_nodes())-2);
 
                con.setLinearCoef(p_var[i],1.0);
                con.setLinearCoef(p_var[j],-1.0);
-               con.setLinearCoef(sigma_vars[NODE_PAIR(i,j)], ((int)nodes.size()) - 1.0);
+               con.setLinearCoef(sigma_vars[NODE_PAIR(i,j)], (int(G->num_nodes())) - 1.0);
                // If (j,i) in the graph
-               if(!(find(in_adj_list.at(i).begin(),in_adj_list.at(i).end(),j) == in_adj_list.at(i).end()))
-                  con.setLinearCoef(sigma_vars[NODE_PAIR(j,i)], ((int)nodes.size()) - 3.0 );
+               if(!(find(G->incoming_to(i).begin(),G->incoming_to(i).end(),j) == G->incoming_to(i).end()))
+                  con.setLinearCoef(sigma_vars[NODE_PAIR(j,i)], (int(G->num_nodes())) - 3.0 );
                model.add(con);
             }
    }
@@ -1001,7 +994,7 @@ void ElppSolver::update_problem(
    IloExpr totalCost(env);
    IloNum objcoeff = 0.0;
    IloNumVar var;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       var = sigma_vars[arc];
       objcoeff = obj_coeff.at(arc);
@@ -1036,7 +1029,7 @@ void ElppSolver::update_problem(
    }
 
    /* Update objective function */
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       IloNumVar var;
       var = sigma_vars[arc];
@@ -1078,7 +1071,7 @@ void ElppSolver::update_problem(
    }
 
    /* Update objective function */
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
    {   
       IloNumVar var;
       var = sigma_vars[arc];
@@ -1102,7 +1095,7 @@ void ElppSolver::update_problem(
       extra_con.end();
       extra_con = IloRange(env, rhs + 1e-05, IloInfinity);
 
-      for (auto arc : arcs)
+      for (auto& arc : G->arcs())
       {   
          extra_con.setLinearCoef(sigma_vars[arc], lhs.at(arc));
       }
@@ -1121,7 +1114,7 @@ void ElppSolver::solve()
 
    cplex.solve();
 
-   //   for(NODE_PAIR arc : arcs)
+   //   for(NODE_PAIR arc : G->arcs())
    //      if(cplex.getValue(sigma_vars[arc])>0)
    //      {
    //         cout << arc << " " << cplex.getValue(sigma_vars[arc]);
@@ -1163,7 +1156,7 @@ void ElppSolver::solveRoot()
    double start_time = cplex.getCplexTime();
    double start_ticks = cplex.getDetTime();
 
-   if((formulation!=1) || nodes.size() < 100)
+   if((formulation!=1) || G->nodes().size() < 100)
    {
       cplex.solve();
       elapsed_time = cplex.getCplexTime() - start_time;
@@ -1199,7 +1192,7 @@ void ElppSolver::solveLP()
       cplex.getValues(val, x_vararray);
 
       unordered_map<NODE_PAIR, IloNum> xSol;
-      for(NODE_PAIR arc : arcs)
+      for(NODE_PAIR arc : G->arcs())
       {
          xSol[arc] = val[index[arc]];
          //LOG << arc.first << " " << arc.second << ": " <<  xSol[arc] << endl;
@@ -1212,20 +1205,20 @@ void ElppSolver::solveLP()
       switch(formulation)
       {
          case SC: /* only SC */
-            if(!separate_weak(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation))
-               separate_sc(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation);
+            if(!separate_weak(env, xSol, G, st, sigma_vars, cutLhs, cutRhs, violation))
+               separate_sc(env, xSol, G, st, sigma_vars,  cutLhs, cutRhs, violation);
             break;
          case MinCut:
-            if(!separate_sc(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation))
-               separate_min_cut(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation);
+            if(!separate_sc(env, xSol, G, st, sigma_vars,  cutLhs, cutRhs, violation))
+               separate_min_cut(env, xSol, G, st, sigma_vars,  cutLhs, cutRhs, violation);
             break;
          case DFJ:
-            if(!separate_sc_dfj(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation))
-               separate_min_cut_dfj(env, xSol, nodes, arcs, st, sigma_vars, out_adj_list, in_adj_list, cutLhs, cutRhs, violation);
+            if(!separate_sc_dfj(env, xSol, G, st, sigma_vars,  cutLhs, cutRhs, violation))
+               separate_min_cut_dfj(env, xSol, G, st, sigma_vars,  cutLhs, cutRhs, violation);
             break;
          case MCFsep:
-            if(!separate_sc_mf(env, xSol, nodes, arcs, st, sigma_vars, qq_var, zz_var, out_adj_list, in_adj_list, cons))
-               separate_min_cut_mf(env, xSol, nodes, arcs, st, sigma_vars, qq_var, zz_var, out_adj_list, in_adj_list, cons);
+            if(!separate_sc_mf(env, xSol, G, st, sigma_vars, qq_var, zz_var,  cons))
+               separate_min_cut_mf(env, xSol, G, st, sigma_vars, qq_var, zz_var,  cons);
             break;
       }
 
@@ -1244,7 +1237,7 @@ void ElppSolver::solveLP()
                   attempts = violation.size();
                else
                {
-                  attempts = min(max_cuts, (int) violation.size());
+                  attempts = min(max_cuts, int(violation.size()));
                   partial_sort(p.begin(), p.begin() + attempts, p.end(), [&](int i, int j){ return violation[i] > violation[j]; }); /* sort indices according to violation */
                   sorted = true;
                }
@@ -1301,7 +1294,7 @@ void ElppSolver::solveLP()
    //   cplex.getValues(val, x_vararray);
    //
    //   unordered_map<NODE_PAIR, IloNum> xSol;
-   //   for(NODE_PAIR arc : arcs)
+   //   for(NODE_PAIR arc : G->arcs())
    //   {
    //      xSol[arc] = val[index[arc]];
    //      LOG << arc.first << " " << arc.second << ": " <<  xSol[arc] << endl;
@@ -1354,7 +1347,7 @@ bool ElppSolver::isInteger()
    IloEnv env = cplex.getEnv();
    IloNumArray val = IloNumArray(env, sigma_vars.size());
    cplex.getValues(val, x_vararray);
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
       if(val[index[arc]] <= 1.0 - TOL && val[index[arc]] >= 0.0 + TOL)
          return false;
    return true;
@@ -1369,7 +1362,7 @@ int ElppSolver::pathLength()
    IloNumArray val = IloNumArray(env, sigma_vars.size());
    cplex.getValues(val, x_vararray);
    int counter = 0;
-   for (auto arc : arcs)
+   for (auto& arc : G->arcs())
       if(val[index[arc]] >= 1.0 - TOL)
          ++counter;
    return counter;
@@ -1381,13 +1374,13 @@ void ElppSolver::printInstance(
       const map<NODE_PAIR, IloNum>& ubs)
 {
    ofstream outfile(filename);
-   outfile << nodes.size() << " " << arcs.size() << endl;
+   outfile << G->nodes().size() << " " << G->arcs().size() << endl;
    outfile << st.first << " " << st.second << endl;
-   for(NODE node : nodes)
+   for(NODE node : G->nodes())
       outfile << node << endl;
-   for(NODE_PAIR arc : arcs)
+   for(NODE_PAIR arc : G->arcs())
       outfile << arc.first << " " << arc.second << " " << obj_coeff.at(arc) << endl;
-   for(NODE_PAIR arc : arcs)
+   for(NODE_PAIR arc : G->arcs())
       outfile << arc.first << " " << arc.second << " " << lbs.at(arc) << " " << ubs.at(arc) << endl;
 }
 

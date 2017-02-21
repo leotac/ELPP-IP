@@ -4,6 +4,7 @@
  */
 
 #include "elpp.h"
+#include "graph.h"
 #include "unionfind.h"
 #include "separation.h"
 #include <iostream>
@@ -22,13 +23,13 @@ using namespace lemon;
 
 
 void build_support_graph(SmartDigraph& support_graph,  unordered_map<NODE,LemonNode>& v_nodes,  map<LemonNode,NODE>& rev_nodes, 
-      const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const ADJ_LIST& out_adj_list, NODE s, NODE t)
+      const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
 {
    LemonNode a, b;
-   for(NODE i : nodes)
+   for(NODE i : G->nodes())
    {
       if(i!=s && i!=t)
-         for(NODE j : out_adj_list.at(i))
+         for(NODE j : G->outgoing_from(i))
          {
             if(j!=s && j!=t && xSol.at(NODE_PAIR(i,j)) > TOL)
             {
@@ -52,14 +53,14 @@ void build_support_graph(SmartDigraph& support_graph,  unordered_map<NODE,LemonN
 }
 
 void build_cap_graph(SmartDigraph& cap_graph, SmartDigraph::ArcMap<double>& x_capacities, unordered_map<NODE,LemonNode>& v_nodes,  map<LemonNode,NODE>& rev_nodes, 
-      const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const ADJ_LIST& out_adj_list, NODE s, NODE t)
+      const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
 {
    LemonNode a, b;
    LemonArc arc;
-   for(NODE i : nodes)
+   for(NODE i : G->nodes())
    {
       if(i!=s && i!=t) //no need for outgoing from t
-         for(NODE j : out_adj_list.at(i))
+         for(NODE j : G->outgoing_from(i))
          {
             if(j!=s /*&& j!=st.second*/) // && xSol.at(NODE_PAIR(i,j)) > 0.001)
             {
@@ -90,8 +91,8 @@ void build_cap_graph(SmartDigraph& cap_graph, SmartDigraph::ArcMap<double>& x_ca
  ****************************************************/
 
 // Weak Component separation (only find disconnected components)
-bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st, const ARC_VARS& sigma_vars, const ADJ_LIST& out_adj_list, const ADJ_LIST& in_adj_list,
+bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+      NODE_PAIR st, const ARC_VARS& sigma_vars,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
    bool ret = false;
@@ -101,10 +102,10 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
    cutRhs = vector<IloExpr>();
    violation = vector<double>();
 
-   UnionFind<NODE> forest(nodes);
+   UnionFind<NODE> forest(G->nodes());
    NODE u,v;
    unordered_map<NODE,bool> reached;   //default: false
-   for(NODE_PAIR arc : arcs){
+   for(auto& arc : G->arcs()){
       u = arc.first;
       v = arc.second;
       if(xSol.at(arc) > TOL)
@@ -121,7 +122,7 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
    unordered_map<NODE, double> out_degree;
    unordered_map<NODE, double> max_node_degree;
    unordered_map<NODE, double> node_out_degree;
-   for(NODE i : nodes)
+   for(NODE i : G->nodes())
    {
       // Not connected to s!
       if(reached[i] == true && forest.find_set(i) != forest.find_set(st.first))
@@ -133,7 +134,7 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
          {  LOG << "Initialized lhs" << endl;
             cutLhsMap[comp] = IloExpr(masterEnv);
          }
-         for (NODE j : out_adj_list.at(i))
+         for (NODE j : G->outgoing_from(i))
          {
             node_out_degree[i] += xSol.at(NODE_PAIR(i,j));
             if( comp != forest.find_set(j))
@@ -149,7 +150,7 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
             LOG << "add rhs " << endl;
             max_node_degree[comp] = node_out_degree[i];
             cutRhsMap[comp] = IloExpr(masterEnv);
-            for (NODE j : out_adj_list.at(i))
+            for (NODE j : G->outgoing_from(i))
                cutRhsMap[comp] += (sigma_vars.at(NODE_PAIR(i,j)));
          }
       }
@@ -175,8 +176,8 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
 
 
 // Strong Component separation
-bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st, const ARC_VARS& sigma_vars, const ADJ_LIST& out_adj_list, const ADJ_LIST& in_adj_list,
+bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+      NODE_PAIR st, const ARC_VARS& sigma_vars,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
    /** Strong component separation */
@@ -188,7 +189,7 @@ bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol,
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, G, s, t);
 
    // Search for strong components
    SmartDigraph::NodeMap<int> nodemap(support_graph);
@@ -218,7 +219,7 @@ bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol,
       {  LOG << "Initialized lhs" << endl;
          cutLhs[comp] = IloExpr(masterEnv);
       }
-      for (NODE j : out_adj_list.at(rev_nodes[i]))
+      for (NODE j : G->outgoing_from(rev_nodes[i]))
       {
          node_out_degree[i] += xSol.at(NODE_PAIR(rev_nodes[i],j));
          if( v_nodes.count(j) == 0 || comp != nodemap[v_nodes[j]])
@@ -234,7 +235,7 @@ bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol,
          LOG << "add rhs " << endl;
          max_node_degree[comp] = node_out_degree[i];
          cutRhs[comp] = IloExpr(masterEnv);
-         for (NODE j : out_adj_list.at(rev_nodes[i]))
+         for (NODE j : G->outgoing_from(rev_nodes[i]))
             //for (SmartDigraph::OutArcIt arc(support_graph, i); arc!=INVALID; ++arc)
             //   if(comp != nodemap[support_graph.target(arc)])
             cutRhs[comp] += (sigma_vars.at(NODE_PAIR(rev_nodes[i],j)));
@@ -261,8 +262,8 @@ bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol,
 
 
 // Min-cut separation
-bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st, const ARC_VARS& sigma_var, const ADJ_LIST& out_adj_list, const ADJ_LIST& in_adj_list,
+bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G,
+      NODE_PAIR st, const ARC_VARS& sigma_var, 
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
    // Build graph with x values as capacities
@@ -272,7 +273,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, G, s, t);
 
    LOG << "Built graph" << endl;
    cutLhs = vector<IloExpr>();
@@ -282,7 +283,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
    IloExpr newCutRhs;
    double newViolation;
    double min_cut_value;
-   for(NODE v : nodes)
+   for(NODE v : G->nodes())
       if(v!=s && v!=t)
       {
          Preflow<SmartDigraph, SmartDigraph::ArcMap<double>> min_cut(cap_graph, x_capacities, v_nodes[v], v_nodes[t]);
@@ -292,7 +293,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
          LOG << "Ran min-cut" << endl;
          // Compute out degree of v
          double node_out_degree = 0;
-         for (NODE j : out_adj_list.at(v))
+         for (NODE j : G->outgoing_from(v))
             node_out_degree += xSol.at(NODE_PAIR(v,j));
 
          LOG << v << endl;
@@ -312,7 +313,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
                //if in S
                if(min_cut.minCut(i))
                   // for all nodes j adjacent to i, not in S
-                  for (NODE j : out_adj_list.at(rev_nodes[i]))
+                  for (NODE j : G->outgoing_from(rev_nodes[i]))
                   {
                      if( v_nodes.count(j) == 0 || !min_cut.minCut(v_nodes[j]))
                      {
@@ -321,7 +322,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
                   }
             }
 
-            for (NODE j : out_adj_list.at(v))
+            for (NODE j : G->outgoing_from(v))
                newCutRhs += (sigma_var.at(NODE_PAIR(v,j)));
 
             cutLhs.push_back(newCutLhs);
@@ -344,8 +345,8 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
 }
 
 // Min-cut separation for DFJ
-bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st, const ARC_VARS& sigma_var, const ADJ_LIST& out_adj_list, const ADJ_LIST& in_adj_list,
+bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+      NODE_PAIR st, const ARC_VARS& sigma_var,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
    // Build graph with x values as capacities
@@ -355,7 +356,7 @@ bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNu
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, G, s, t);
    
    LOG << "Built graph" << endl;
    cutLhs = vector<IloExpr>();
@@ -365,7 +366,7 @@ bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNu
    IloExpr newCutRhs;
    double newViolation;
    double min_cut_value;
-   for(NODE v : nodes)
+   for(NODE v : G->nodes())
       if(v!=s && v!=t)
       {
          Preflow<SmartDigraph, SmartDigraph::ArcMap<double>> min_cut(cap_graph, x_capacities, v_nodes[v], v_nodes[t]);
@@ -427,8 +428,8 @@ bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNu
 
 
 // Strong Component separation for DFJ
-bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st, const ARC_VARS& sigma_vars, const ADJ_LIST& out_adj_list, const ADJ_LIST& in_adj_list,
+bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+      NODE_PAIR st, const ARC_VARS& sigma_vars, 
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
    /** Strong component separation */
@@ -440,7 +441,7 @@ bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& x
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, G, s, t);
 
    // search for strong components
    SmartDigraph::NodeMap<int> nodemap(support_graph);
@@ -493,9 +494,9 @@ bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& x
 
 
 // Strong Component separation for MCF
-bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st,  ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var, const ADJ_LIST& out_adj_list, 
-      const ADJ_LIST& in_adj_list, vector<IloRange>& cons)
+bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const std::shared_ptr<Graph> G,
+      NODE_PAIR st,  ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var,
+      vector<IloRange>& cons)
 {
    /** Strong component separation */
    bool ret = false;
@@ -506,7 +507,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_support_graph(support_graph, v_nodes, rev_nodes, xSol, G, s, t);
 
    // Search for strong components
    SmartDigraph::NodeMap<int> nodemap(support_graph);
@@ -526,7 +527,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
       ++cardinality[comp];
       
       /* compute the out degree of each node, while also updating delta(S) of its component */
-      for (NODE j : out_adj_list.at(rev_nodes[i]))
+      for (NODE j : G->outgoing_from(rev_nodes[i]))
       {
          node_out_degree[i] += xSol.at(NODE_PAIR(rev_nodes[i],j));
          if( v_nodes.count(j) == 0 || comp != nodemap[v_nodes[j]])
@@ -555,7 +556,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
          IloRange con;
          // Ham1
          // qq[h,i,j] <= sigma[i,j] (s,t)
-         for (auto arc : arcs)
+         for (auto& arc : G->arcs())
          {   
             con = IloRange(masterEnv, -IloInfinity, 0.0);
             con.setLinearCoef(qq_var[TRIPLET(h,arc)],1.0);
@@ -567,14 +568,14 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
          // sum{(s,j) in A}qq[h,s,j] = z[h] (s,t)
          con = IloRange(masterEnv, 0.0, 0.0);
          con.setLinearCoef(zz_var[h],-1.0);
-         for(auto j : out_adj_list.at(s)) 
+         for(auto j : G->outgoing_from(s)) 
             con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(s,j))],1.0);
          cons.push_back(con);
 
          // Ham3
          // sum{(i,s) in A}qq[h,i,s] = 0
          con = IloRange(masterEnv, 0.0, 0.0);
-         for(auto j : in_adj_list.at(s)) 
+         for(auto j : G->incoming_to(s)) 
             con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,s))],1.0);
          cons.push_back(con);
 
@@ -582,27 +583,27 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
          // sum{(i,h) in A}q[h,i,h] = z[h]
          con = IloRange(masterEnv, 0.0, 0.0);
          con.setLinearCoef(zz_var[h],-1.0);
-         for(auto j : in_adj_list.at(h)) 
+         for(auto j : G->incoming_to(h)) 
             con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,h))],1.0);
          cons.push_back(con);
 
          // Ham5
          // sum{(h,j) in A}q[h,h,j] = 0 
          con = IloRange(masterEnv, 0.0, 0.0);
-         for(auto j : out_adj_list.at(h)) 
+         for(auto j : G->outgoing_from(h)) 
             con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(h,j))],1.0);
          cons.push_back(con);
 
          // Ham6
          // sum{(i,j) in A}qq[h,i,j] - sum{(j,i) in A}qq[h,j,i] = 0
-         for (NODE node : nodes)
+         for (NODE node : G->nodes())
          {
             if (node != h && node != s)
             {
                con = IloRange(masterEnv, 0.0, 0.0);
-               for(auto j : out_adj_list.at(node))
+               for(auto j : G->outgoing_from(node))
                   con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(node,j))],-1.0);
-               for(auto j : in_adj_list.at(node))
+               for(auto j : G->incoming_to(node))
                   con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,node))],1.0);
                cons.push_back(con);
             }
@@ -611,7 +612,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
 //         // Ham7
 //         // sum{(t,j) in A}q[h,t,j] = 0  //don't see why needed TODO
 //         con = IloRange(masterEnv, 0.0, 0.0);
-//         for(auto j : out_adj_list.at(t))
+//         for(auto j : G->outgoing_from(t))
 //            con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(t,j))],1.0);
 //         cons.push_back(con);
 
@@ -620,7 +621,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
          // if node h is reached, z[h] = 1
          con = IloRange(masterEnv, 0.0, 0.0);
          con.setLinearCoef(zz_var[h],-1.0);
-         for(auto j : in_adj_list.at(h)) 
+         for(auto j : G->incoming_to(h)) 
             con.setLinearCoef(sigma_vars[NODE_PAIR(j,h)],1.0);
          cons.push_back(con);
 
@@ -636,9 +637,9 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
 }
 
 // Min-cut separation for MCF
-bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const vector<NODE>& nodes, const vector<NODE_PAIR>& arcs, 
-      NODE_PAIR st,  ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var, const ADJ_LIST& out_adj_list, 
-      const ADJ_LIST& in_adj_list, vector<IloRange>& cons)
+bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+      NODE_PAIR st, ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var, 
+      vector<IloRange>& cons)
 {
    // Build graph with x values as capacities
    SmartDigraph cap_graph;
@@ -647,12 +648,12 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
    map<LemonNode,NODE> rev_nodes;
    NODE s = st.first;
    NODE t = st.second;
-   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, nodes, out_adj_list, s, t);
+   build_cap_graph(cap_graph, x_capacities, v_nodes, rev_nodes, xSol, G, s, t);
 
    LOG << "Built graph" << endl;
    cons = vector<IloRange>();
    double min_cut_value;
-   for(NODE v : nodes)
+   for(NODE v : G->nodes())
       if(v!=s && v!=t)
       {
          Preflow<SmartDigraph, SmartDigraph::ArcMap<double>> min_cut(cap_graph, x_capacities, v_nodes[v], v_nodes[t]);
@@ -662,7 +663,7 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
          LOG << "Ran min-cut" << endl;
          // Compute out degree of v
          double node_out_degree = 0;
-         for (NODE j : out_adj_list.at(v))
+         for (NODE j : G->outgoing_from(v))
             node_out_degree += xSol.at(NODE_PAIR(v,j));
 
          LOG << v << endl;
@@ -676,7 +677,7 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
             IloRange con;
             // Ham1
             // qq[h,i,j] <= sigma[i,j] (s,t)
-            for (auto arc : arcs)
+            for (auto& arc : G->arcs())
             {   
                con = IloRange(masterEnv, -IloInfinity, 0.0);
                con.setLinearCoef(qq_var[TRIPLET(h,arc)],1.0);
@@ -688,14 +689,14 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
             // sum{(s,j) in A}qq[h,s,j] = z[h] (s,t)
             con = IloRange(masterEnv, 0.0, 0.0);
             con.setLinearCoef(zz_var[h],-1.0);
-            for(auto j : out_adj_list.at(s)) 
+            for(auto j : G->outgoing_from(s)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(s,j))],1.0);
             cons.push_back(con);
 
             // Ham3
             // sum{(i,s) in A}qq[h,i,s] = 0
             con = IloRange(masterEnv, 0.0, 0.0);
-            for(auto j : in_adj_list.at(s)) 
+            for(auto j : G->incoming_to(s)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,s))],1.0);
             cons.push_back(con);
 
@@ -703,27 +704,27 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
             // sum{(i,h) in A}q[h,i,h] = z[h]
             con = IloRange(masterEnv, 0.0, 0.0);
             con.setLinearCoef(zz_var[h],-1.0);
-            for(auto j : in_adj_list.at(h)) 
+            for(auto j : G->incoming_to(h)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,h))],1.0);
             cons.push_back(con);
 
             // Ham5
             // sum{(h,j) in A}q[h,h,j] = 0 
             con = IloRange(masterEnv, 0.0, 0.0);
-            for(auto j : out_adj_list.at(h)) 
+            for(auto j : G->outgoing_from(h)) 
                con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(h,j))],1.0);
             cons.push_back(con);
 
             // Ham6
             // sum{(i,j) in A}qq[h,i,j] - sum{(j,i) in A}qq[h,j,i] = 0
-            for (NODE node : nodes)
+            for (NODE node : G->nodes())
             {
                if (node != h && node != s)
                {
                   con = IloRange(masterEnv, 0.0, 0.0);
-                  for(auto j : out_adj_list.at(node))
+                  for(auto j : G->outgoing_from(node))
                      con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(node,j))],-1.0);
-                  for(auto j : in_adj_list.at(node))
+                  for(auto j : G->incoming_to(node))
                      con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(j,node))],1.0);
                   cons.push_back(con);
                }
@@ -732,7 +733,7 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
 //            // Ham7
 //            // sum{(t,j) in A}q[h,t,j] = 0  //don't see why needed TODO
 //            con = IloRange(masterEnv, 0.0, 0.0);
-//            for(auto j : out_adj_list.at(t))
+//            for(auto j : G->outgoing_from(t))
 //               con.setLinearCoef(qq_var[TRIPLET(h,NODE_PAIR(t,j))],1.0);
 //            cons.push_back(con);
 
@@ -741,7 +742,7 @@ bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum
             // if node h is reached, z[h] = 1
             con = IloRange(masterEnv, 0.0, 0.0);
             con.setLinearCoef(zz_var[h],-1.0);
-            for(auto j : in_adj_list.at(h)) 
+            for(auto j : G->incoming_to(h)) 
                con.setLinearCoef(sigma_vars[NODE_PAIR(j,h)],1.0);
             cons.push_back(con);
 
