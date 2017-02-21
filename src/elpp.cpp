@@ -1046,14 +1046,12 @@ void ElppSolver::update_problem(
 }
 
 
-/** Update the problem */
+/** Update the problem with an additional lhs ≥ rhs side constraint, too */
 void ElppSolver::update_problem(
       const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
       const map<NODE_PAIR, IloNum>& lbs,
       const map<NODE_PAIR, IloNum>& ubs,
-      const unordered_map<NODE_PAIR, IloNum>& lhs, 
-      IloNum rhs,
-      bool use_extra_con
+      const unordered_map<NODE_PAIR, IloNum>& lhs, IloNum rhs
       )
 {
    /***************/ 
@@ -1086,21 +1084,17 @@ void ElppSolver::update_problem(
       var.setBounds(lower, upper);
    }
 
-   /* Lower bound on *real* objective function value */
-   if ( use_extra_con )
-   {
-      if(extra_con.getImpl() == NULL)
-         model.remove(extra_con);
-      /** Reduced cost (lhs) must be greater than w (rhs) to be an improving column */
-      extra_con.end();
-      extra_con = IloRange(env, rhs + 1e-05, IloInfinity);
+   /* Extra constraint */
+   if(extra_con.getImpl() == NULL)
+      model.remove(extra_con);
+   extra_con.end();
+   extra_con = IloRange(env, rhs, IloInfinity);
 
-      for (auto& arc : G->arcs())
-      {   
-         extra_con.setLinearCoef(sigma_vars[arc], lhs.at(arc));
-      }
-      model.add(extra_con);
+   for (auto& arc : G->arcs())
+   {   
+      extra_con.setLinearCoef(sigma_vars[arc], lhs.at(arc));
    }
+   model.add(extra_con);
 
 }
 
@@ -1398,7 +1392,7 @@ void ElppSolver::append_info(string info_filename, string instance_name)
    infofile << st.first << "\t";
    infofile << st.second << "\t";
   
-   infofile << which(formulation)  << "\t";
+   infofile << ElppFormulationName[formulation]  << "\t";
 
    if(cplex.getStatus() == IloAlgorithm::Optimal)
       infofile << cplex.getObjValue() << "\t";

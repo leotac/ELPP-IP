@@ -46,8 +46,7 @@ class ElppSolver
             const map<NODE_PAIR, IloNum>& lbs,
             const map<NODE_PAIR, IloNum>& ubs,
             const unordered_map<NODE_PAIR, IloNum>& lhs, 
-            IloNum rhs,
-            bool use_extra_con
+            IloNum rhs
             );
 
       void solve();

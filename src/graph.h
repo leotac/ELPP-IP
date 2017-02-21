@@ -38,6 +38,7 @@ class Graph
 
       unsigned num_nodes() { return nodes_m.size(); }
       unsigned num_arcs() { return arcs_m.size(); }
+   
    private:
       vector<NODE>                       nodes_m;         /* array of nodes */
       vector<NODE_PAIR>                  arcs_m;          /* arcs */

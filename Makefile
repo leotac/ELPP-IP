@@ -25,7 +25,7 @@ CPLEXINC = -I$(CPLEXINCDIR) -I$(CONCERTINCDIR)
 #-----------------------------------------------------------------------------
 
 MAINNAME	=	elpp
-MAINOBJ		=	main.o elpp.o separation.o type.o 
+MAINOBJ		=	main.o elpp.o separation.o 
 
 MAIN		=	$(MAINNAME)
 MAINFILE	=	$(BINDIR)/$(MAIN)

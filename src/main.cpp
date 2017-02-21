@@ -21,13 +21,43 @@
 /* namespace usage */
 using namespace std;
 
+void read_graph(std::string filename, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost)
+{
+   /* Read data file */
+   ifstream infile(filename);
+   if (!infile.good())
+   {
+      cout << "Can't read file " << filename <<endl;
+      exit(0);
+   }
+
+   int n, m;
+   infile >> n >> m;
+   cout << n << " " << m << endl;
+
+   for(int k=0;k<n;k++)
+   {
+      NODE i;
+      infile >> i;
+      G->add_node(i);
+   }
+
+   for(int k=0;k<m;k++)
+   {
+      NODE i,j;
+      double c;
+      infile >> i >> j >> c;
+      G->add_arc(i,j);
+      cost[NODE_PAIR(i,j)] = c;
+   }
+}
+
 
 int main(int argc, char** argv)
 {
    srand(2);
    string filename = "";
    string st_filename ="";
-   bool bounds = false;
    bool help = false;
    bool relax = false;
    vector<NODE> origins;
@@ -74,9 +104,6 @@ int main(int argc, char** argv)
          case 't':
             destinations.push_back(atoi(optarg));
             break;
-         case 'b':
-            bounds = true; 
-            break;
          case 'r':
             relax = true; 
             break;
@@ -101,7 +128,6 @@ int main(int argc, char** argv)
       cout << "-k\tstop after k problems have been solved" << endl;
       cout << "-e\tcut violation tolerance" << endl;
       cout << "-m\tmax number of cuts to be added in a callback. set -1 to add all violated inequalities (default: 1)" << endl;
-      cout << "-b\tread arc variables bounds from data file" << endl;
       cout << "-r\tsolve LP relaxation" << endl;
       cout << endl << "Examples:" << endl;
       cout << "\t" << argv[0] << " -f data/toy.dat" << endl;
@@ -127,9 +153,6 @@ int main(int argc, char** argv)
       exit(0);
    }
 
-   unordered_map<NODE_PAIR, double> cost;
-   map<NODE, vector<NODE>> out_adj_list;
-   map<NODE, vector<NODE>> in_adj_list;
 
    /* instance name */
    size_t lastdot = filename.find_first_of(".");
@@ -185,59 +208,9 @@ int main(int argc, char** argv)
       formulations.push_back(ElppForm::SC);
    }
 
-
-
+   unordered_map<NODE_PAIR, double> cost;
    std::shared_ptr<Graph> G = std::make_shared<Graph>();
-
-   /* Read data file */
-   ifstream infile(filename);
-   if (!infile.good())
-   {
-      cout << "Can't read file " << filename <<endl;
-      exit(0);
-   }
-
-   int n, m;
-   infile >> n >> m;
-   //cout << n << " " << m << endl;
-   
-   //vector<NODE> nodes;
-   //nodes.reserve(n);
-   //vector<NODE_PAIR> arcs;
-   //arcs.reserve(m);
-   map<NODE_PAIR, double> ubs, lbs;
-   
-   for(int k=0;k<n;k++)
-   {
-      NODE i;
-      infile >> i;
-      G->add_node(i);
-   }
-
-   for(int k=0;k<m;k++)
-   {
-      NODE i,j;
-      double c;
-      infile >> i >> j >> c;
-      G->add_arc(i,j);
-      cost[NODE_PAIR(i,j)] = c;
-   }
-
-   if(bounds) 
-      for(int k=0;k<m;k++)
-      {
-         NODE i,j;
-         double lb = 0;
-         double ub = 1;
-         infile >> i >> j >> lb >> ub;
-         if(cost.count(NODE_PAIR(i,j))==0) 
-         {
-            cout << "Unexpected end of file or non-existing arc: ( " << i << ", " << j << " )" <<endl;
-            exit(-1);
-         }
-         lbs[NODE_PAIR(i,j)] = lb;
-         ubs[NODE_PAIR(i,j)] = ub;
-      }
+   read_graph(filename, G, cost);
 
    /* Add (s,t) pairs from .st file */
    if(st_pairs.size() == 0 && destinations.size() == 0)
@@ -306,7 +279,7 @@ int main(int argc, char** argv)
 
    int k=0;
    bool stop=false;
-   /** Call solver for given origin-destination pairs */
+   /** Call solver for given origin-destination pairs, with the selected formulations */
    for(auto st : st_pairs)
    {
       NODE s = st.first;
@@ -318,24 +291,21 @@ int main(int argc, char** argv)
          {
             IloEnv env;
             lemon::Timer time;
-            if((/*MCF*/ form == ElppForm::MCF && n >= 100) 
-                  || (/*MCFsep*/ relax && form == ElppForm::MCFsep && n >= 500))
+            if((/*MCF*/ form == ElppForm::MCF && G->num_nodes() >= 100) 
+                  || (/*MCFsep*/ relax && form == ElppForm::MCFsep && G->num_nodes() >= 500))
             {
-               cout << which(form) << "\t: - -" << endl;
+               cout << ElppFormulationName[form] << "\t: - -" << endl;
             }
             else{
                ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), G, form, relax, timelimit, epsilon, max_cuts);
-               if(bounds)
-                  elpp_solver.update_problem(cost, lbs, ubs);
-               else
-                  elpp_solver.update_problem(cost);
+               elpp_solver.update_problem(cost);
                time.start();
                if(relax)
                   elpp_solver.solveLP();
                else
                   elpp_solver.solve();
                time.stop();
-               cout << "###" << which(form) << "\t: ";
+               cout << "###" << ElppFormulationName[form] << "\t: ";
                if(elpp_solver.getStatus() == IloAlgorithm::Optimal)
                   cout << elpp_solver.getObjValue() << " " << time.userTime() << endl;
                else
@@ -345,10 +315,8 @@ int main(int argc, char** argv)
             }
             env.end();
          }
-         ++k;
-         if(k == K)
+         if(++k == K)
             stop=true;
-
       }   
    }
    return 0;
