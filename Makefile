@@ -1,16 +1,12 @@
-#@file    Makefile
-#@brief   Makefile for ELPP tests 
-
 #-------------------------
-# Cplex
+# Cplex and other libraries
 # ------------------------
 
-#SYSTEM     = x86-64_sles10_4.1
 SYSTEM     = x86-64_linux
 LIBFORMAT  = static_pic
 
-CPLEXDIR      = /opt/ibm/cplex126
-CONCERTDIR    = /opt/ibm/concert126
+CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio126/cplex
+CONCERTDIR    = /opt/ibm/ILOG/CPLEX_Studio126/concert
 
 CPLEXBINDIR   = $(CPLEXDIR)/bin/$(BINDIST)
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
@@ -40,20 +36,14 @@ USRCXXFLAGS	=	-std=c++0x -DIL_STD
 
 OBJDIR          =       obj
 BINOBJDIR       =       $(OBJDIR)/bin
-LIBOBJDIR       =       $(OBJDIR)/lib
 SRCDIR          =       src
 BINDIR          =       bin
-LIBDIR          =       lib
 CXX		=	g++
-CXX_c           =       -c # the trailing space is important
 CXX_o           =       -o # the trailing space is important
 LINKCXX         =       g++
-LINKCXX_L       =       -L
-LINKCXX_l       =       -l
 LINKCXX_o       =       -o # the trailing space is important
 FLAGS 		= 	-I$(SRCDIR) -DNDEBUG -DROUNDING_FE $(USRCXXFLAGS)
 OFLAGS 		= 	-O3
-CFLAGS          +=      -m64
 CXXFLAGS        +=      -m64
 LDFLAGS         +=      -m64
 
@@ -86,7 +76,7 @@ $(MAINFILE):	$(BINDIR) $(OBJDIR)  $(LPILIBFILE) $(NLPILIBFILE) $(MAINOBJFILES)
 		@echo "-> linking $@"
 		$(LINKCXX) $(CPLEXINC) $(MAINOBJFILES)\
 		$(CCLNDIRS) \
-                $(OFLAGS) $(LPSLDFLAGS) $(CCLNFLAGS) \
+                $(OFLAGS) $(CCLNFLAGS) \
 		$(LDFLAGS) $(LINKCXX_o)$@
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
