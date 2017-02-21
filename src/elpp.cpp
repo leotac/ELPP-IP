@@ -22,7 +22,7 @@ using namespace lemon;
 /*******************************************************/
 
 /** Constructor */
-ElppSolverCplex::ElppSolverCplex(
+ElppSolver::ElppSolver(
       IloEnv env,
       NODE_PAIR st_,
       const vector<NODE>& nodes_, 
@@ -160,7 +160,7 @@ ElppSolverCplex::ElppSolverCplex(
 }
 
 
-void ElppSolverCplex::build_problem_sec()
+void ElppSolver::build_problem_sec()
 {
    /***************/ 
    /* Build model */
@@ -221,7 +221,7 @@ void ElppSolverCplex::build_problem_sec()
 
 }
 
-void ElppSolverCplex::build_problem_mf(bool sep)
+void ElppSolver::build_problem_mf(bool sep)
 {
    /***************/ 
    /* Build model */
@@ -446,7 +446,7 @@ void ElppSolverCplex::build_problem_mf(bool sep)
 }
 
 /** Single flow formulation */
-void ElppSolverCplex::build_problem_sf()
+void ElppSolver::build_problem_sf()
 {
    /***************/ 
    /* Build model */
@@ -604,7 +604,7 @@ void ElppSolverCplex::build_problem_sf()
 
 
 /** RLT formulation */
-void ElppSolverCplex::build_problem_rlt()
+void ElppSolver::build_problem_rlt()
 {
    /***************/ 
    /* Build model */
@@ -799,7 +799,7 @@ void ElppSolverCplex::build_problem_rlt()
 }  /* RLT */
 
 /** MTZ formulation */
-void ElppSolverCplex::build_problem_mtz()
+void ElppSolver::build_problem_mtz()
 {
    /***************/ 
    /* Build model */
@@ -891,7 +891,7 @@ void ElppSolverCplex::build_problem_mtz()
 } /* MTZ */
 
 /** DL formulation */
-void ElppSolverCplex::build_problem_dl()
+void ElppSolver::build_problem_dl()
 {
    /***************/ 
    /* Build model */
@@ -986,7 +986,7 @@ void ElppSolverCplex::build_problem_dl()
 
 
 /** Update the objective fuction */
-void ElppSolverCplex::update_problem(
+void ElppSolver::update_problem(
       const unordered_map<NODE_PAIR, IloNum>& obj_coeff 
       )
 {
@@ -1015,7 +1015,7 @@ void ElppSolverCplex::update_problem(
 }
 
 /** Update the problem with bounds (e.g., branching info) */
-void ElppSolverCplex::update_problem(
+void ElppSolver::update_problem(
       const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
       const map<NODE_PAIR, IloNum>& lbs,
       const map<NODE_PAIR, IloNum>& ubs
@@ -1054,7 +1054,7 @@ void ElppSolverCplex::update_problem(
 
 
 /** Update the problem */
-void ElppSolverCplex::update_problem(
+void ElppSolver::update_problem(
       const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
       const map<NODE_PAIR, IloNum>& lbs,
       const map<NODE_PAIR, IloNum>& ubs,
@@ -1112,7 +1112,7 @@ void ElppSolverCplex::update_problem(
 }
 
 /** Solve problem */
-void ElppSolverCplex::solve()
+void ElppSolver::solve()
 {
    LOG << "------------------ SOLVING ELPP FOR " << st.first << " - " << st.second << "-------------" << endl;
 
@@ -1136,7 +1136,7 @@ void ElppSolverCplex::solve()
 }
 
 /** Solve root node (LP relaxation) */
-void ElppSolverCplex::solveRoot()
+void ElppSolver::solveRoot()
 {
    LOG << "------------------ Solving ELPP root node for " << st.first << " - " << st.second << "-------------" << endl;
 
@@ -1173,7 +1173,7 @@ void ElppSolverCplex::solveRoot()
 }
 
 /** Solve LP relaxation manually */
-void ElppSolverCplex::solveLP()
+void ElppSolver::solveLP()
 {
    LOG << "------------------ Solving LP for " << st.first << " - " << st.second << "-------------" << endl;
 
@@ -1313,40 +1313,40 @@ void ElppSolverCplex::solveLP()
 }
 
 
-void ElppSolverCplex::clear()
+void ElppSolver::clear()
 {
    LOG << "Clearing cuts and lazy constraints" << endl;
    cplex.clearUserCuts();
    cplex.clearLazyConstraints();
 }
 
-IloAlgorithm::Status ElppSolverCplex::getStatus()
+IloAlgorithm::Status ElppSolver::getStatus()
 {
    return cplex.getStatus();
 }
 
-IloNum ElppSolverCplex::getBestObjValue()
+IloNum ElppSolver::getBestObjValue()
 {
    return cplex.getBestObjValue();
 }
 
-IloNum ElppSolverCplex::getObjValue()
+IloNum ElppSolver::getObjValue()
 {
    return cplex.getObjValue();
 }
 
-IloNum ElppSolverCplex::getValue(NODE_PAIR arc)
+IloNum ElppSolver::getValue(NODE_PAIR arc)
 {
    return cplex.getValue(sigma_vars[arc]);
 }
 
-IloNum ElppSolverCplex::getValue(NODE node)
+IloNum ElppSolver::getValue(NODE node)
 {
    return cplex.getValue(p_var[node]);
 }
 
 /* check if the current solution is feasible for the original problem */
-bool ElppSolverCplex::isInteger()
+bool ElppSolver::isInteger()
 {
    if(cplex.getStatus() != IloAlgorithm::Optimal)
       return false;
@@ -1360,7 +1360,7 @@ bool ElppSolverCplex::isInteger()
    return true;
 }
 
-int ElppSolverCplex::pathLength()
+int ElppSolver::pathLength()
 {
    if(cplex.getStatus() != IloAlgorithm::Optimal)
       return false;
@@ -1374,7 +1374,7 @@ int ElppSolverCplex::pathLength()
          ++counter;
    return counter;
 }
-void ElppSolverCplex::printInstance(
+void ElppSolver::printInstance(
       string filename,
       const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
       const map<NODE_PAIR, IloNum>& lbs,
@@ -1391,14 +1391,14 @@ void ElppSolverCplex::printInstance(
       outfile << arc.first << " " << arc.second << " " << lbs.at(arc) << " " << ubs.at(arc) << endl;
 }
 
-void ElppSolverCplex::writeLP(string filename)
+void ElppSolver::writeLP(string filename)
 {
    string ciccio = filename+".lp";
    cplex.exportModel(ciccio.c_str());
 }
 
 /* Print info file */
-void ElppSolverCplex::append_info(string info_filename, string instance_name)
+void ElppSolver::append_info(string info_filename, string instance_name)
 {
    ofstream infofile(info_filename, std::ios_base::app);
    infofile << instance_name << "\t";

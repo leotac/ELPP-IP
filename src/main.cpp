@@ -323,7 +323,7 @@ int main(int argc, char** argv)
                cout << which(form) << "\t: - -" << endl;
             }
             else{
-               ElppSolverCplex elpp_solver = ElppSolverCplex(env, NODE_PAIR(s,t), nodes, arcs, out_adj_list, in_adj_list, form, relax, timelimit, epsilon, max_cuts);
+               ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), nodes, arcs, out_adj_list, in_adj_list, form, relax, timelimit, epsilon, max_cuts);
                if(bounds)
                   elpp_solver.update_problem(cost, lbs, ubs);
                else

@@ -17,11 +17,11 @@ typedef unordered_map<NODE_PAIR,IloNumVar> ARC_VARS;
 typedef map<NODE,vector<NODE>> ADJ_LIST;
 typedef unordered_map<NODE_PAIR,int> INDEX_MAP;
 
-class ElppSolverCplex
+class ElppSolver
 {
    public:
-      ElppSolverCplex(){};
-      ElppSolverCplex(IloEnv env,
+      ElppSolver(){};
+      ElppSolver(IloEnv env,
             NODE_PAIR st_,
             const vector<NODE>& nodes_, 
             const vector<NODE_PAIR>&  arcs_,
