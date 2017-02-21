@@ -207,7 +207,6 @@ int main(int argc, char** argv)
    {
       NODE i;
       infile >> i;
-      //cout << i << endl;
       nodes.push_back(i);
       out_adj_list[i] = vector<NODE>();
       in_adj_list[i] = vector<NODE>();
@@ -218,7 +217,6 @@ int main(int argc, char** argv)
       NODE i,j;
       double c;
       infile >> i >> j >> c;
-      //cout << i << " "<< j << " " << c <<endl;
       out_adj_list[i].push_back(j);
       in_adj_list[j].push_back(i);
       cost[NODE_PAIR(i,j)] = c;
@@ -232,7 +230,6 @@ int main(int argc, char** argv)
          double lb = 0;
          double ub = 1;
          infile >> i >> j >> lb >> ub;
-         //cout << i << " "<< j << " " << lb << " " << ub <<endl;
          if(cost.count(NODE_PAIR(i,j))==0) 
          {
             cout << "Unexpected end of file or non-existing arc: ( " << i << ", " << j << " )" <<endl;
@@ -301,29 +298,6 @@ int main(int argc, char** argv)
       for(NODE t : destinations)
          st_pairs.push_back(pair<NODE,NODE>(s,t)); 
 
-
-
-   /* */
-   string info_filename = "";
-   if(infodir != "")
-   {
-      info_filename = infodir + "/" + instance_name + ".nfo";
-      if(relax)
-         info_filename += ".relax";
-
-      ofstream infofile;
-      if(!ifstream(info_filename) || !append)
-      {
-         infofile.open(info_filename);
-         infofile << "inst\t";
-         if(relax)
-            infofile << "s\tt\tform\topt\ttime\tticks\tsolveT\tcutT\tnodes\tcuts\tint" << endl;
-         else
-            infofile << "s\tt\tform\topt\ttime\tticks\tsolveT\tcutT\tnodes\tcuts\ttol\tmaxc" << endl;
-         infofile.close();
-      }
-   }
-   
    cout << "Set of " << st_pairs.size() << " s-t pairs." << endl;
    if(K == 0) 
       K = (int) st_pairs.size();
@@ -352,16 +326,6 @@ int main(int argc, char** argv)
                   )
             {
                cout << which(form) << "\t: - -" << endl;
-               if(info_filename != "")
-               {
-                  ofstream infofile(info_filename, std::ios_base::app);
-                  infofile << instance_name << "\t" << s << "\t" << t << "\t" << which(form) << "\t-\t-\t-\t-\t-\t-\t-";
-                  if(relax)
-                     infofile << "\t0" << endl;
-                  else
-                     infofile << "\t-\t-" << endl;
-                  infofile.close();
-               }
             }
             else{
 
@@ -376,8 +340,6 @@ int main(int argc, char** argv)
                else
                   elpp_solver.solve();
                time.stop();
-               if(info_filename != "")
-                  elpp_solver.append_info(info_filename, instance_name);
                cout << "###" << which(form) << "\t: ";
                if(elpp_solver.getStatus() == IloAlgorithm::Optimal)
                   cout << elpp_solver.getObjValue() << " " << time.userTime() << endl;

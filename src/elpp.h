@@ -12,9 +12,6 @@
 #include <string>
 #include <lemon/time_measure.h>
 
-lemon::Timer global_timer;
-lemon::Timer solve_timer;
-
 using namespace std;
 typedef unordered_map<NODE_PAIR,IloNumVar> ARC_VARS;
 typedef map<NODE,vector<NODE>> ADJ_LIST;

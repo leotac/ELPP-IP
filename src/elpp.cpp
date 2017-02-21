@@ -1119,9 +1119,6 @@ void ElppSolverCplex::solve()
    double start_time = cplex.getCplexTime();
    double start_ticks = cplex.getDetTime();
 
-   global_timer.reset();
-   solve_timer.reset();
-   solve_timer.start();
    cplex.solve();
 
    //   for(NODE_PAIR arc : arcs)
@@ -1133,8 +1130,6 @@ void ElppSolverCplex::solve()
    //         cout << endl;
    //      }
 
-
-   solve_timer.stop();
    elapsed_time = cplex.getCplexTime() - start_time;
    elapsed_ticks = cplex.getDetTime() - start_ticks;
 
@@ -1168,9 +1163,6 @@ void ElppSolverCplex::solveRoot()
    double start_time = cplex.getCplexTime();
    double start_ticks = cplex.getDetTime();
 
-   global_timer.reset();
-   solve_timer.reset();
-   solve_timer.start();
    if((formulation!=1) || nodes.size() < 100)
    {
       cplex.solve();
@@ -1187,10 +1179,6 @@ void ElppSolverCplex::solveLP()
 
    double start_time = cplex.getCplexTime();
    double start_ticks = cplex.getDetTime();
-
-   global_timer.reset();
-   solve_timer.reset();
-   solve_timer.start();
 
    bool separated = true;
    ncuts = 0;
@@ -1220,7 +1208,6 @@ void ElppSolverCplex::solveLP()
       vector<IloExpr> cutLhs, cutRhs;
       vector<IloRange> cons;
       vector<double> violation;
-      global_timer.start();   //measure the separation time
 
       switch(formulation)
       {
@@ -1304,7 +1291,6 @@ void ElppSolverCplex::solveLP()
             break;
       }
 
-      global_timer.stop();
       val.end();
    } /* while(separated) */
    
@@ -1321,7 +1307,6 @@ void ElppSolverCplex::solveLP()
    //      LOG << arc.first << " " << arc.second << ": " <<  xSol[arc] << endl;
    //   }
 
-   solve_timer.stop();
    elapsed_time = cplex.getCplexTime() - start_time;
    elapsed_ticks = cplex.getDetTime() - start_ticks;
 
@@ -1416,48 +1401,28 @@ void ElppSolverCplex::writeLP(string filename)
 void ElppSolverCplex::append_info(string info_filename, string instance_name)
 {
    ofstream infofile(info_filename, std::ios_base::app);
-   //   infofile << "s\tt\tform\topt\ttime\tticks\tnodes\tcuts" << endl;
    infofile << instance_name << "\t";
    infofile << st.first << "\t";
    infofile << st.second << "\t";
   
    infofile << which(formulation)  << "\t";
 
-/*   if((formulation==1 || formulation==2) && nodes.size() >100 && relax)
+   if(cplex.getStatus() == IloAlgorithm::Optimal)
+      infofile << cplex.getObjValue() << "\t";
+   else 
+      infofile << "-" << "\t";
+   infofile << elapsed_time << "\t";
+   infofile << elapsed_ticks << "\t";
+   infofile << cplex.getNnodes() << "\t";
+   if(relax)
+      infofile << ncuts << "\t" << isInteger() << endl;
+   else
    {
-      infofile << "-" << "\t";
-      infofile << 1200 << "\t";
-      infofile << "-" << "\t";
-      infofile << "-" << "\t";
-      infofile << "-" << "\t";
-      infofile << "-" << "\t";
-      infofile << "-" << endl;
-   } 
-   else */
-   {  
-      if(cplex.getStatus() == IloAlgorithm::Optimal)
-         infofile << cplex.getObjValue() << "\t";
-      else 
-         infofile << "-" << "\t";
-      infofile << elapsed_time << "\t";
-      infofile << elapsed_ticks << "\t";
-      infofile << solve_timer.userTime() << "\t";
-      infofile << global_timer.userTime() << "\t";
-      infofile << cplex.getNnodes() << "\t";
-      if(relax)
-         infofile << ncuts << "\t" << isInteger() << endl;
-      else
-      {
-         infofile << cplex.getNcuts(IloCplex::CutUser) << "\t";
-         infofile << tol << "\t";
-         infofile << max_cuts << endl;
-         //infofile << pathLength() << endl;
-      }
+      infofile << cplex.getNcuts(IloCplex::CutUser) << "\t";
+      infofile << tol << "\t";
+      infofile << max_cuts << endl;
+      //infofile << pathLength() << endl;
    }
 
-   global_timer.reset();
-   solve_timer.reset();
-
 }
-
 

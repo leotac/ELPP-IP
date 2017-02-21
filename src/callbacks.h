@@ -42,7 +42,6 @@ IloCplex::Callback StrongComponentLazyCallback(IloEnv env, vector<NODE> nodes, v
 
 void StrongComponentLazyCallbackI::main()
 {
-   global_timer.start();
    IloEnv masterEnv = getEnv();
 
    LOG << "--STRONGCOMPONENT-LAZYCONSTR--" << endl;
@@ -123,8 +122,7 @@ void StrongComponentLazyCallbackI::main()
          break;
    }
    
-   LOG << "--END ILOLAZYCONSTRAINTCALLBACK--" << global_timer.userTime() << endl;
-   global_timer.stop();
+   LOG << "--END ILOLAZYCONSTRAINTCALLBACK--" << endl;
    return;
 }
 
@@ -162,7 +160,6 @@ void ElppCutCallbackI::main()
    if ( !isAfterCutLoop() )
       return;
 
-   global_timer.start();
    LOG << "--ELPP USERCUT--" << endl;
 
    IloEnv masterEnv = getEnv();
@@ -245,8 +242,7 @@ void ElppCutCallbackI::main()
          break;
    }
 
-   LOG << "--END ILOUSERCUTCALLBACK--" << global_timer.userTime() << endl;
-   global_timer.stop();
+   LOG << "--END ILOUSERCUTCALLBACK--" << endl;
    return;
 }
 
