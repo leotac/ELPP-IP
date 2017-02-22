@@ -71,6 +71,7 @@ int main(int argc, char** argv)
    double epsilon = 0.001;
    
    int o = 0;
+   int tmp = -1;
    while ((o = getopt(argc, argv, "f:p:c:k:m:e:n:s:t:T:a::b::r::")) != -1)
       switch (o)
       {
@@ -81,7 +82,9 @@ int main(int argc, char** argv)
             st_filename = optarg;
             break;
          case 'c':
-            formulations.push_back((ElppForm) atoi(optarg));
+            tmp = atoi(optarg);
+            if(tmp >= 0 && tmp < ElppFormulationName.size())
+                formulations.push_back(ElppForm(tmp));
             break;
          case 'k':
             K = atoi(optarg);
@@ -200,11 +203,11 @@ int main(int argc, char** argv)
             cout << form << "- Using MCF formulation with row-generation" << endl;
             break;
          default:
-            cout << form << "- Unknown." << endl;
+            cout << form << "- Unknown. Should not happen." << endl;
       }
    if(formulations.size() == 0)
    {
-      cout << "None selected. Using Strong Component (SC)." << endl;
+      cout << "No formulation selected. Using Strong Component (SC)." << endl;
       formulations.push_back(ElppForm::SC);
    }
 

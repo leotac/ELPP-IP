@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wcast-qual"
@@ -34,7 +35,7 @@ enum ElppForm{
       MCFsep   = 9
 };
 
-static std::string ElppFormulationName[] = { "None", "MCF", "SC", "MinCut", "SF", "RLT", "MTZ", "DL", "DFJ", "MCFsep" };
+static std::vector<std::string> ElppFormulationName = { "None", "MCF", "SC", "MinCut", "SF", "RLT", "MTZ", "DL", "DFJ", "MCFsep" };
 
 template <class T1, class T2>
 std::ostream& operator<<(std::ostream& out, const std::pair<T1, T2>& value)
