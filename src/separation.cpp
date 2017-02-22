@@ -23,7 +23,7 @@ using namespace lemon;
 
 
 void build_support_graph(SmartDigraph& support_graph,  unordered_map<NODE,LemonNode>& v_nodes,  map<LemonNode,NODE>& rev_nodes, 
-      const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
+      const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
 {
    LemonNode a, b;
    for(NODE i : G->nodes())
@@ -53,7 +53,7 @@ void build_support_graph(SmartDigraph& support_graph,  unordered_map<NODE,LemonN
 }
 
 void build_cap_graph(SmartDigraph& cap_graph, SmartDigraph::ArcMap<double>& x_capacities, unordered_map<NODE,LemonNode>& v_nodes,  map<LemonNode,NODE>& rev_nodes, 
-      const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
+      const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, NODE s, NODE t)
 {
    LemonNode a, b;
    LemonArc arc;
@@ -91,7 +91,7 @@ void build_cap_graph(SmartDigraph& cap_graph, SmartDigraph::ArcMap<double>& x_ca
  ****************************************************/
 
 // Weak Component separation (only find disconnected components)
-bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, 
       NODE_PAIR st, const ARC_VARS& sigma_vars,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
@@ -176,7 +176,7 @@ bool separate_weak(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSo
 
 
 // Strong Component separation
-bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, 
       NODE_PAIR st, const ARC_VARS& sigma_vars,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
@@ -262,7 +262,7 @@ bool separate_sc(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol,
 
 
 // Min-cut separation
-bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G,
+bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G,
       NODE_PAIR st, const ARC_VARS& sigma_var, 
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
@@ -345,7 +345,7 @@ bool separate_min_cut(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& 
 }
 
 // Min-cut separation for DFJ
-bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, 
       NODE_PAIR st, const ARC_VARS& sigma_var,
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
@@ -428,7 +428,7 @@ bool separate_min_cut_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNu
 
 
 // Strong Component separation for DFJ
-bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, 
       NODE_PAIR st, const ARC_VARS& sigma_vars, 
       vector<IloExpr>& cutLhs, vector<IloExpr>& cutRhs, vector<double>& violation)
 {
@@ -494,7 +494,7 @@ bool separate_sc_dfj(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& x
 
 
 // Strong Component separation for MCF
-bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, const std::shared_ptr<Graph> G,
+bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, const std::shared_ptr<Graph> G,
       NODE_PAIR st,  ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var,
       vector<IloRange>& cons)
 {
@@ -637,7 +637,7 @@ bool separate_sc_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xS
 }
 
 // Min-cut separation for MCF
-bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, IloNum>& xSol, std::shared_ptr<Graph> G, 
+bool separate_min_cut_mf(IloEnv masterEnv, const unordered_map<NODE_PAIR, double>& xSol, std::shared_ptr<Graph> G, 
       NODE_PAIR st, ARC_VARS& sigma_vars, unordered_map<TRIPLET,IloNumVar>& qq_var, unordered_map<NODE,IloNumVar>& zz_var, 
       vector<IloRange>& cons)
 {

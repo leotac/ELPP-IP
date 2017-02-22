@@ -172,7 +172,7 @@ void ElppSolver::build_problem_sec()
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -271,7 +271,7 @@ void ElppSolver::build_problem_mf(bool sep)
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -484,7 +484,7 @@ void ElppSolver::build_problem_sf()
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -641,7 +641,7 @@ void ElppSolver::build_problem_rlt()
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -822,7 +822,7 @@ void ElppSolver::build_problem_mtz()
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -914,7 +914,7 @@ void ElppSolver::build_problem_dl()
    {
       IloRange con;
 
-      IloNum coeff;
+      double coeff;
       if( node == s)
          coeff = 1.0;
       else if ( node == t)
@@ -980,7 +980,7 @@ void ElppSolver::build_problem_dl()
 
 /** Update the objective fuction */
 void ElppSolver::update_problem(
-      const unordered_map<NODE_PAIR, IloNum>& obj_coeff 
+      const unordered_map<NODE_PAIR, double>& obj_coeff 
       )
 {
    /***************/ 
@@ -992,7 +992,7 @@ void ElppSolver::update_problem(
    /* Build objective function */
    IloEnv env = model.getEnv();
    IloExpr totalCost(env);
-   IloNum objcoeff = 0.0;
+   double objcoeff = 0.0;
    IloNumVar var;
    for (auto& arc : G->arcs())
    {   
@@ -1009,9 +1009,9 @@ void ElppSolver::update_problem(
 
 /** Update the problem with bounds (e.g., branching info) */
 void ElppSolver::update_problem(
-      const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-      const map<NODE_PAIR, IloNum>& lbs,
-      const map<NODE_PAIR, IloNum>& ubs
+      const unordered_map<NODE_PAIR, double>& obj_coeff, 
+      const map<NODE_PAIR, double>& lbs,
+      const map<NODE_PAIR, double>& ubs
       )
 {
    /***************/ 
@@ -1034,13 +1034,13 @@ void ElppSolver::update_problem(
       IloNumVar var;
       var = sigma_vars[arc];
 
-      IloNum objcoeff = 0.0;
+      double objcoeff = 0.0;
       objcoeff = obj_coeff.at(arc);
       objective.setLinearCoef(var, objcoeff);
 
       // Update bounds
-      IloNum upper = ubs.at(arc);
-      IloNum lower = lbs.at(arc);
+      double upper = ubs.at(arc);
+      double lower = lbs.at(arc);
       var.setBounds(lower, upper);
    }
 }
@@ -1048,10 +1048,10 @@ void ElppSolver::update_problem(
 
 /** Update the problem with an additional lhs ≥ rhs side constraint, too */
 void ElppSolver::update_problem(
-      const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-      const map<NODE_PAIR, IloNum>& lbs,
-      const map<NODE_PAIR, IloNum>& ubs,
-      const unordered_map<NODE_PAIR, IloNum>& lhs, IloNum rhs
+      const unordered_map<NODE_PAIR, double>& obj_coeff, 
+      const map<NODE_PAIR, double>& lbs,
+      const map<NODE_PAIR, double>& ubs,
+      const unordered_map<NODE_PAIR, double>& lhs, double rhs
       )
 {
    /***************/ 
@@ -1074,13 +1074,13 @@ void ElppSolver::update_problem(
       IloNumVar var;
       var = sigma_vars[arc];
 
-      IloNum objcoeff = 0.0;
+      double objcoeff = 0.0;
       objcoeff = obj_coeff.at(arc);
       objective.setLinearCoef(var, objcoeff);
 
       // Update branching information
-      IloNum upper = ubs.at(arc);
-      IloNum lower = lbs.at(arc);
+      double upper = ubs.at(arc);
+      double lower = lbs.at(arc);
       var.setBounds(lower, upper);
    }
 
@@ -1185,7 +1185,7 @@ void ElppSolver::solveLP()
       IloNumArray val = IloNumArray(env, sigma_vars.size());
       cplex.getValues(val, x_vararray);
 
-      unordered_map<NODE_PAIR, IloNum> xSol;
+      unordered_map<NODE_PAIR, double> xSol;
       for(NODE_PAIR arc : G->arcs())
       {
          xSol[arc] = val[index[arc]];
@@ -1287,7 +1287,7 @@ void ElppSolver::solveLP()
    //   IloNumArray val = IloNumArray(env, sigma_vars.size());
    //   cplex.getValues(val, x_vararray);
    //
-   //   unordered_map<NODE_PAIR, IloNum> xSol;
+   //   unordered_map<NODE_PAIR, double> xSol;
    //   for(NODE_PAIR arc : G->arcs())
    //   {
    //      xSol[arc] = val[index[arc]];
@@ -1312,22 +1312,22 @@ IloAlgorithm::Status ElppSolver::getStatus()
    return cplex.getStatus();
 }
 
-IloNum ElppSolver::getBestObjValue()
+double ElppSolver::getBestObjValue()
 {
    return cplex.getBestObjValue();
 }
 
-IloNum ElppSolver::getObjValue()
+double ElppSolver::getObjValue()
 {
    return cplex.getObjValue();
 }
 
-IloNum ElppSolver::getValue(NODE_PAIR arc)
+double ElppSolver::getValue(NODE_PAIR arc)
 {
    return cplex.getValue(sigma_vars[arc]);
 }
 
-IloNum ElppSolver::getValue(NODE node)
+double ElppSolver::getValue(NODE node)
 {
    return cplex.getValue(p_var[node]);
 }
@@ -1363,9 +1363,9 @@ int ElppSolver::pathLength()
 }
 void ElppSolver::printInstance(
       string filename,
-      const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-      const map<NODE_PAIR, IloNum>& lbs,
-      const map<NODE_PAIR, IloNum>& ubs)
+      const unordered_map<NODE_PAIR, double>& obj_coeff, 
+      const map<NODE_PAIR, double>& lbs,
+      const map<NODE_PAIR, double>& ubs)
 {
    ofstream outfile(filename);
    outfile << G->nodes().size() << " " << G->arcs().size() << endl;

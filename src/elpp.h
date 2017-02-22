@@ -33,20 +33,20 @@ class ElppSolver
             int max_cuts);
 
       void update_problem(
-            const unordered_map<NODE_PAIR, IloNum>& obj_coeff 
+            const unordered_map<NODE_PAIR, double>& obj_coeff 
             );
       void update_problem(
-            const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-            const map<NODE_PAIR, IloNum>& lbs,
-            const map<NODE_PAIR, IloNum>& ubs
+            const unordered_map<NODE_PAIR, double>& obj_coeff, 
+            const map<NODE_PAIR, double>& lbs,
+            const map<NODE_PAIR, double>& ubs
             );
 
       void update_problem(
-            const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-            const map<NODE_PAIR, IloNum>& lbs,
-            const map<NODE_PAIR, IloNum>& ubs,
-            const unordered_map<NODE_PAIR, IloNum>& lhs, 
-            IloNum rhs
+            const unordered_map<NODE_PAIR, double>& obj_coeff, 
+            const map<NODE_PAIR, double>& lbs,
+            const map<NODE_PAIR, double>& ubs,
+            const unordered_map<NODE_PAIR, double>& lhs, 
+            double rhs
             );
 
       void solve();
@@ -61,16 +61,16 @@ class ElppSolver
 
       void printInstance(
             string filename,
-            const unordered_map<NODE_PAIR, IloNum>& obj_coeff, 
-            const map<NODE_PAIR, IloNum>& lbs,
-            const map<NODE_PAIR, IloNum>& ubs
+            const unordered_map<NODE_PAIR, double>& obj_coeff, 
+            const map<NODE_PAIR, double>& lbs,
+            const map<NODE_PAIR, double>& ubs
             );
 
       IloAlgorithm::Status getStatus();
-      IloNum getObjValue();
-      IloNum getBestObjValue();
-      IloNum getValue(NODE_PAIR arc);
-      IloNum getValue(NODE node);
+      double getObjValue();
+      double getBestObjValue();
+      double getValue(NODE_PAIR arc);
+      double getValue(NODE node);
       bool isInteger();
       int pathLength();
 

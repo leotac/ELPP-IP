@@ -47,7 +47,7 @@ void StrongComponentLazyCallbackI::main()
    IloNumArray val = IloNumArray(masterEnv, sigma_vars.size());
    getValues(val, x_vararray);
 
-   unordered_map<NODE_PAIR, IloNum> xSol;
+   unordered_map<NODE_PAIR, double> xSol;
    for(NODE_PAIR arc : G->arcs())
    {
       //LOG << arc.first << " " << arc.second << endl;
@@ -161,7 +161,7 @@ void ElppCutCallbackI::main()
    IloNumArray val = IloNumArray(masterEnv, sigma_vars.size());
    getValues(val, x_vararray);
 
-   unordered_map<NODE_PAIR, IloNum> xSol;
+   unordered_map<NODE_PAIR, double> xSol;
    for(NODE_PAIR arc : G->arcs())
    {
       //LOG << arc.first << " " << arc.second << endl;
