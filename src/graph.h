@@ -9,6 +9,8 @@
 #include "type.h"
 #include <map>
 #include <vector>
+#include <numeric>
+#include <algorithm>
 
 class Graph
 {
@@ -26,6 +28,10 @@ class Graph
          in_adj_list_m[j].push_back(i);
          arcs_m.push_back(NODE_PAIR(i,j));
       }
+      
+      bool has_node(NODE n) {
+          return std::find(std::begin(nodes_m), std::end(nodes_m), n) != std::end(nodes_m);
+      }
 
       const vector<NODE>& nodes() const { return nodes_m; }
       const vector<NODE_PAIR>& arcs() const { return arcs_m; }
@@ -38,7 +44,25 @@ class Graph
 
       unsigned num_nodes() { return nodes_m.size(); }
       unsigned num_arcs() { return arcs_m.size(); }
-   
+  
+      bool check() { 
+         // check number of nodes in adjacency lists is ok 
+         cout << nodes_m.size() << endl;
+         cout << out_adj_list_m.size() << endl;
+         if(out_adj_list_m.size() != nodes_m.size() || in_adj_list_m.size() != nodes_m.size())
+            return false;
+         
+         // check number of arcs computed from the adjacency lists is ok
+         auto count_arcs = [](unsigned res, const pair<NODE,vector<NODE>>& key_value_pair){ 
+                            return res + key_value_pair.second.size(); };
+         unsigned num_out_arcs = std::accumulate(out_adj_list_m.begin(), out_adj_list_m.end(), unsigned(0), count_arcs);
+         unsigned num_in_arcs = std::accumulate(in_adj_list_m.begin(), in_adj_list_m.end(), unsigned(0), count_arcs);
+         if( num_in_arcs != arcs_m.size() ||  num_out_arcs != arcs_m.size() )
+            return false; 
+         
+         return true; 
+      }
+
    private:
       vector<NODE>                       nodes_m;         /* array of nodes */
       vector<NODE_PAIR>                  arcs_m;          /* arcs */

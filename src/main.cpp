@@ -12,6 +12,7 @@
 #include "type.h"
 #include "elpp.h"
 #include "graph.h"
+#include "readers.h"
 #include <algorithm>
 #include <random>
 #include <map>
@@ -20,37 +21,6 @@
 
 /* namespace usage */
 using namespace std;
-
-void read_graph(std::string filename, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost)
-{
-   /* Read data file */
-   ifstream infile(filename);
-   if (!infile.good())
-   {
-      cout << "Can't read file " << filename <<endl;
-      exit(0);
-   }
-
-   int n, m;
-   infile >> n >> m;
-   cout << n << " " << m << endl;
-
-   for(int k=0;k<n;k++)
-   {
-      NODE i;
-      infile >> i;
-      G->add_node(i);
-   }
-
-   for(int k=0;k<m;k++)
-   {
-      NODE i,j;
-      double c;
-      infile >> i >> j >> c;
-      G->add_arc(i,j);
-      cost[NODE_PAIR(i,j)] = c;
-   }
-}
 
 
 int main(int argc, char** argv)
@@ -157,17 +127,6 @@ int main(int argc, char** argv)
    }
 
 
-   /* instance name */
-   size_t lastdot = filename.find_first_of(".");
-   size_t lastslash = filename.find_last_of("/");
-
-   string stripped = filename.substr(0,lastdot);
-   string instance_name;
-   if (lastslash != string::npos)
-      instance_name = stripped.substr(lastslash + 1, string::npos);
-   else
-      instance_name = stripped; //bah
-
    cout << "Selected formulations:"<<endl;
    for(ElppForm form : formulations)
       switch(form)
@@ -213,7 +172,12 @@ int main(int argc, char** argv)
 
    unordered_map<NODE_PAIR, double> cost;
    std::shared_ptr<Graph> G = std::make_shared<Graph>();
-   read_graph(filename, G, cost);
+   if(! Readers::read_graph(filename, G, cost) )
+   {
+       cout << "Something wrong reading from file." << endl;
+       exit(1);
+   }
+
 
    /* Add (s,t) pairs from .st file */
    if(st_pairs.size() == 0 && destinations.size() == 0)
@@ -221,25 +185,29 @@ int main(int argc, char** argv)
       ifstream st_file;
       st_file.open(st_filename);
       NODE s, t;
-      while(st_file >> s >> t)
-         if(find(G->nodes().begin(), G->nodes().end(), s) != G->nodes().end() && find(G->nodes().begin(), G->nodes().end(), t) != G->nodes().end())
+      while(st_file >> s >> t) {
+         if(G->has_node(s) && G->has_node(t))
             st_pairs.push_back(pair<NODE,NODE>(s,t));
+         else
+            cout << "Cannot use pair: (" << s << "," << t << "). Either origin or destination is missing." << endl;
+      }
       st_file.close();
    }
 
 
    mt19937 rnd_engine(12);
    
-   /* Build set of origins*/
+   /* Check the set of good origins*/
    bool ok = true;
+   int good_origins = 0;
    for(NODE s : origins)
-      if (find(G->nodes().begin(), G->nodes().end(), s) == G->nodes().end())
-      {
+      if(G->has_node(s))
+         ++good_origins;
+      else
          cout << s << " not in graph!" << endl;
-         ok = false;
-         break;
-      }
-   if((st_pairs.size() == 0 && origins.size() == 0) || !ok)
+  
+   /* If no (s,t) pair has been given, and not even a good origin */
+   if(st_pairs.size() == 0 && good_origins == 0)
    {
       origins = G->nodes();
       if(pairs>0 && pairs<int(origins.size()))
@@ -249,16 +217,16 @@ int main(int argc, char** argv)
       }
    }
 
-   /* Build set of destinations*/
-   ok = true;
+   /* Check the set of good destinations*/
+   int good_destinations = 0;
    for(NODE t : destinations)
-      if (std::find(G->nodes().begin(), G->nodes().end(), t) == G->nodes().end())
-      {
+      if(G->has_node(t))
+         ++good_destinations;
+      else
          cout << t << " not in graph!" << endl;
-         ok = false;
-         break;
-      }
-   if((st_pairs.size() == 0 && destinations.size() == 0) || !ok)
+
+   /* If no (s,t) pair has been given, and not even a good destination */
+   if(st_pairs.size() == 0 && good_destinations == 0)
    {
       destinations = G->nodes();
       if(pairs>0 && pairs<int(destinations.size()))
@@ -269,10 +237,11 @@ int main(int argc, char** argv)
    }
  
 
-   /* Add all combinations to set of (s,t) pairs */ 
+   /* Add all legal combinations to set of (s,t) pairs */ 
    for(NODE s : origins)
       for(NODE t : destinations)
-         st_pairs.push_back(pair<NODE,NODE>(s,t)); 
+         if(G->has_node(s) && G->has_node(t))
+            st_pairs.push_back(pair<NODE,NODE>(s,t)); 
 
    cout << "Set of " << st_pairs.size() << " s-t pairs." << endl;
    if(K == 0) 
