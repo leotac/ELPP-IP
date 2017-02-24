@@ -49,6 +49,10 @@ class ElppSolver
             double rhs
             );
 
+      void add_constraint(
+            const unordered_map<NODE_PAIR, double>& lhs, double lb, double ub
+            );
+
       void solve();
       void solveRoot();
       void solveLP();

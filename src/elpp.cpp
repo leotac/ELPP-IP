@@ -1098,6 +1098,22 @@ void ElppSolver::update_problem(
 
 }
 
+
+/** Update the problem with an additional lb ≤ a·σ ≤ ub constraint */
+void ElppSolver::add_constraint(
+      const unordered_map<NODE_PAIR, double>& coeffs, double lb, double ub
+      )
+{
+   IloEnv env = model.getEnv();
+   IloRange additional_con = IloRange(env, lb, ub);
+   for (auto& arc : G->arcs())
+   {   
+      additional_con.setLinearCoef(sigma_vars[arc], coeffs.at(arc));
+   }
+   model.add(additional_con);
+}
+
+
 /** Solve problem */
 void ElppSolver::solve()
 {
