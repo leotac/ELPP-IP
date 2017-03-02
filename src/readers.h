@@ -30,7 +30,7 @@ class Readers
             }
 
             /* suffix */
-            size_t lastdot = filename.find_first_of(".");
+            size_t lastdot = filename.find_last_of(".");
             string suffix = filename.substr(lastdot + 1, string::npos);
 
             if (suffix == "dat")
@@ -90,7 +90,104 @@ class Readers
 
         };
 
-        static bool read_graphfile(std::ifstream& infile, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost){};
-        static bool read_dimacsfile(std::ifstream& infile, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost){};
+        static bool read_graphfile(std::ifstream& infile, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost)
+        {
+           // Format used in the 10th DIMACS Implementation Challenge
+           string line;
+           int n, m;
+           int weight_type = 0;
+           bool has_node_weights = false, has_arc_weights = false; 
+           std::getline(infile, line);
+           std::stringstream ss(line);
+           ss >> n >> m >> weight_type;
+
+           if(weight_type == 1)
+              has_arc_weights = true;
+           if(weight_type == 10)
+              has_node_weights = true;
+           if(weight_type == 11) {
+              has_node_weights = true;
+              has_arc_weights = true;
+           }
+
+           int j;
+           double c;
+           for(int i=1; i<=n; ++i)
+           {
+              G->add_node(i);
+              std::getline(infile, line);
+              std::stringstream ss(line);
+              while(ss >> j)
+              {
+                 if(has_node_weights) //skip node weight, if there
+                    ss >> j;
+
+                 if( j > n || j < 1) {
+                    cout << "Node " << j << " out of bounds." << endl;
+                    return false;
+                 }
+
+                 if(i == j) {
+                    cout << "Self-loop detected." << endl;
+                    return false;
+                 }
+
+                 G->add_arc(i,j);
+
+                 if(cost.count(NODE_PAIR(i,j)) > 0) {
+                    cout << "Arc (" << i << "," << j << ") added twice." << endl;
+                    return false;
+                 }
+
+                 if(has_arc_weights) {
+                    ss >> c; 
+                    cost[NODE_PAIR(i,j)] = c;
+                 }
+                 else
+                    cost[NODE_PAIR(i,j)] = 1;
+              }
+           }
+           return G->check();
+        };
+        
+        static bool read_dimacsfile(std::ifstream& infile, std::shared_ptr<Graph> G, unordered_map<NODE_PAIR, double>& cost){
+           // Format used in the 9th DIMACS Implementation Challenge
+           string line;
+           int n, m;
+           char line_type;
+           string dummy;
+           bool read_problem_line = false;
+           while(std::getline(infile, line)) {
+              std::stringstream ss(line);
+               ss >> line_type;
+               if(line_type == 'c')
+                  continue;
+               if(line_type == 'p') {
+                  ss >> dummy >> n >> m;
+                  read_problem_line = true;
+               }
+               if(!read_problem_line && line_type == 'a') {
+                  cout << "Cannot have an arc line before the problem line has been read." << endl;
+                  return false;
+               }
+               if(read_problem_line && line_type == 'a') {
+                  int i,j;
+                  double c;
+                  ss >> i >> j >> c;
+                  G->add_node(i);
+                  G->add_node(j);
+                  G->add_arc(i,j);
+                  cost[NODE_PAIR(i,j)] = c;
+               }
+           }
+           if(G->num_nodes() != n || G->num_arcs() != m) {
+              cout << G->num_nodes() << endl;
+              cout << n << endl;
+              cout << G->num_arcs() << endl;
+              cout << m << endl;
+              cout << "The number of read nodes or arcs does not match the problem line." << endl;
+           }
+           return G->check();
+        };
 
 };

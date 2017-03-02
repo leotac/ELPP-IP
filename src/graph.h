@@ -18,9 +18,9 @@ class Graph
       Graph() {}
 
       void add_node(NODE n) { 
-         nodes_m.push_back(n);
-         out_adj_list_m[n] = vector<NODE>();
-         in_adj_list_m[n] = vector<NODE>();
+         if(!has_node(n)) {
+            nodes_m.push_back(n);
+         }
       }
 
       void add_arc(NODE i, NODE j) {
@@ -49,16 +49,20 @@ class Graph
          // check number of nodes in adjacency lists is ok 
          cout << nodes_m.size() << endl;
          cout << out_adj_list_m.size() << endl;
-         if(out_adj_list_m.size() != nodes_m.size() || in_adj_list_m.size() != nodes_m.size())
+         if(out_adj_list_m.size() != nodes_m.size() || in_adj_list_m.size() != nodes_m.size()) {
+            cout << "Check failed: number of nodes." << endl;
             return false;
+         }
          
          // check number of arcs computed from the adjacency lists is ok
          auto count_arcs = [](unsigned res, const pair<NODE,vector<NODE>>& key_value_pair){ 
                             return res + key_value_pair.second.size(); };
          unsigned num_out_arcs = std::accumulate(out_adj_list_m.begin(), out_adj_list_m.end(), unsigned(0), count_arcs);
          unsigned num_in_arcs = std::accumulate(in_adj_list_m.begin(), in_adj_list_m.end(), unsigned(0), count_arcs);
-         if( num_in_arcs != arcs_m.size() ||  num_out_arcs != arcs_m.size() )
-            return false; 
+         if( num_in_arcs != arcs_m.size() ||  num_out_arcs != arcs_m.size() ) {
+            cout << "Check failed: number of arcs." << endl;
+            return false;
+         }
          
          return true; 
       }
