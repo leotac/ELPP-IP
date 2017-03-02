@@ -27,9 +27,9 @@ int main(int argc, char** argv)
 {
    srand(2);
    string filename = "";
-   string st_filename ="";
    bool help = false;
    bool relax = false;
+   bool pruning = false;
    vector<NODE> origins;
    vector<NODE> destinations;
    vector<pair<NODE,NODE>> st_pairs;
@@ -42,14 +42,14 @@ int main(int argc, char** argv)
    
    int o = 0;
    int tmp = -1;
-   while ((o = getopt(argc, argv, "f:p:c:k:m:e:n:s:t:T:a::b::r::")) != -1)
+   while ((o = getopt(argc, argv, "f:p::c:k:m:e:n:s:t:T:a::b::r::")) != -1)
       switch (o)
       {
          case 'f':
             filename = optarg;
             break;
          case 'p':
-            st_filename = optarg;
+            pruning = true;
             break;
          case 'c':
             tmp = atoi(optarg);
@@ -91,7 +91,6 @@ int main(int argc, char** argv)
       cout << "Note: if no origin(s) and/or destination(s) are specified, all combinations are solved." << endl;
       cout << "Options:" << endl;
       cout << "-f\t(mandatory) name of data file." << endl;
-      cout << "-p\tname of file with a list of (s,t) pairs." << endl;
       cout << "-s\torigin(s)\t(can specify more than one)" << endl;
       cout << "-t\tdestination(s)\t(can specify more than one)" << endl;
       cout << "-n\tuse a set of random origins and/or destinations of cardinality n and solve for all combinations [O(n^2) problems]" << endl;
@@ -101,6 +100,7 @@ int main(int argc, char** argv)
       cout << "-k\tstop after k problems have been solved" << endl;
       cout << "-e\tcut violation tolerance" << endl;
       cout << "-m\tmax number of cuts to be added in a callback. set -1 to add all violated inequalities (default: 1)" << endl;
+      cout << "-p\tprune nodes that cannot be on an (s,t) path" << endl;
       cout << "-r\tsolve LP relaxation" << endl;
       cout << endl << "Examples:" << endl;
       cout << "\t" << argv[0] << " -f data/toy.dat" << endl;
@@ -178,23 +178,6 @@ int main(int argc, char** argv)
        exit(1);
    }
 
-
-   /* Add (s,t) pairs from .st file */
-   if(st_pairs.size() == 0 && destinations.size() == 0)
-   {
-      ifstream st_file;
-      st_file.open(st_filename);
-      NODE s, t;
-      while(st_file >> s >> t) {
-         if(G->has_node(s) && G->has_node(t))
-            st_pairs.push_back(pair<NODE,NODE>(s,t));
-         else
-            cout << "Cannot use pair: (" << s << "," << t << "). Either origin or destination is missing." << endl;
-      }
-      st_file.close();
-   }
-
-
    mt19937 rnd_engine(12);
    
    /* Check the set of good origins*/
@@ -240,10 +223,10 @@ int main(int argc, char** argv)
    /* Add all legal combinations to set of (s,t) pairs */ 
    for(NODE s : origins)
       for(NODE t : destinations)
-         if(G->has_node(s) && G->has_node(t))
+         if(G->has_node(s) && G->has_node(t) && G->are_connected(s,t))
             st_pairs.push_back(pair<NODE,NODE>(s,t)); 
 
-   cout << "Set of " << st_pairs.size() << " s-t pairs." << endl;
+   cout << "Set of " << st_pairs.size() << " legal s-t pairs." << endl;
    if(K == 0) 
       K = int(st_pairs.size());
    else
@@ -269,6 +252,14 @@ int main(int argc, char** argv)
                cout << ElppFormulationName[form] << "\t: - -" << endl;
             }
             else{
+               if(pruning) {
+                  cost.clear();
+                  G = std::make_shared<Graph>();
+                  Readers::read_graph(filename, G, cost);
+                  cout << "Pruning for (" << s << "," << t << ")" << endl;
+                  G->prune(s,t);
+                  cout << "Pruned. Now it has " << G->num_nodes() << " nodes" << endl;
+               }
                ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), G, form, relax, timelimit, epsilon, max_cuts);
                elpp_solver.update_problem(cost);
                time.start();

@@ -181,11 +181,11 @@ class Readers
                }
            }
            if(G->num_nodes() != n || G->num_arcs() != m) {
-              cout << G->num_nodes() << endl;
-              cout << n << endl;
-              cout << G->num_arcs() << endl;
-              cout << m << endl;
-              cout << "The number of read nodes or arcs does not match the problem line." << endl;
+              //cout << G->num_nodes() << endl;
+              //cout << n << endl;
+              //cout << G->num_arcs() << endl;
+              //cout << m << endl;
+              cout << "Warning: the number of read nodes or arcs does not match the problem line." << endl;
            }
            return G->check();
         };
