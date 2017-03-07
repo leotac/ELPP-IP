@@ -8,6 +8,7 @@
 
 #include "type.h"
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <numeric>
 #include <algorithm>
@@ -18,9 +19,12 @@ class Graph
       Graph() {}
 
       void add_node(NODE n) { 
-         nodes_m.push_back(n);
-         out_adj_list_m[n] = vector<NODE>();
-         in_adj_list_m[n] = vector<NODE>();
+         if(!has_node(n))
+            nodes_m.push_back(n);
+         if(out_adj_list_m.count(n) == 0)
+            out_adj_list_m[n] = vector<NODE>();
+         if(in_adj_list_m.count(n) == 0)
+            in_adj_list_m[n] = vector<NODE>();
       }
 
       void add_arc(NODE i, NODE j) {
@@ -47,21 +51,33 @@ class Graph
   
       bool check() { 
          // check number of nodes in adjacency lists is ok 
-         cout << nodes_m.size() << endl;
-         cout << out_adj_list_m.size() << endl;
-         if(out_adj_list_m.size() != nodes_m.size() || in_adj_list_m.size() != nodes_m.size())
+         if(out_adj_list_m.size() != nodes_m.size() || in_adj_list_m.size() != nodes_m.size()) {
+            cout << "Check failed: number of nodes." << endl;
             return false;
+         }
          
          // check number of arcs computed from the adjacency lists is ok
          auto count_arcs = [](unsigned res, const pair<NODE,vector<NODE>>& key_value_pair){ 
                             return res + key_value_pair.second.size(); };
          unsigned num_out_arcs = std::accumulate(out_adj_list_m.begin(), out_adj_list_m.end(), unsigned(0), count_arcs);
          unsigned num_in_arcs = std::accumulate(in_adj_list_m.begin(), in_adj_list_m.end(), unsigned(0), count_arcs);
-         if( num_in_arcs != arcs_m.size() ||  num_out_arcs != arcs_m.size() )
-            return false; 
+         if( num_in_arcs != arcs_m.size() ||  num_out_arcs != arcs_m.size() ) {
+            cout << "Check failed: number of arcs." << arcs_m.size() << num_out_arcs << num_in_arcs << endl;
+            return false;
+         }
          
          return true; 
       }
+
+      void prune(NODE s, NODE t); //Prune nodes that canno be in a (s,t) path
+
+      bool are_connected(NODE s, NODE t);
+      void dijkstra(NODE root,
+         std::unordered_map<NODE, double>& distance,
+         std::unordered_map<NODE, NODE>& parent,
+         bool outgoing = true // true whether you want to compute all the shortest paths *from* the root node.
+                              // otherwise, compute shortest paths *to* the root node.
+      );
 
    private:
       vector<NODE>                       nodes_m;         /* array of nodes */
