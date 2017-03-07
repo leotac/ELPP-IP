@@ -28,9 +28,18 @@ is by using the awesomeness of Integer Programming (IP) and modern branch-and-cu
 
 The core of a simple IP formulation is as simple as this:
 
-<p align="center"><img src="https://rawgit.com/in	git@github.com:sbebo/ESPP/None/svgs/75f9602acf255b89e1142f2675595fbf.svg?invert_in_darkmode" align=middle width=593.7459pt height=193.75785pt/></p>
-where <img src="https://rawgit.com/in	git@github.com:sbebo/ESPP/None/svgs/acec3b1ee3438b5d3fba4844dabc4212.svg?invert_in_darkmode" align=middle width=50.542635pt height=22.56408pt/> are the arc costs, and
-<img src="https://rawgit.com/in	git@github.com:sbebo/ESPP/None/svgs/64f56542d8c96b6573f52b8e6135215f.svg?invert_in_darkmode" align=middle width=20.07522pt height=14.10255pt/> are binary arc variables that take value 1 if the arc <img src="https://rawgit.com/in	git@github.com:sbebo/ESPP/None/svgs/aa20264597f5a63b51587e0581c48f2c.svg?invert_in_darkmode" align=middle width=33.35376pt height=24.56553pt/> belongs to the path. 
+\begin{align}
+   &\max \sum_{(i,j)\in A}c_{ij}x_{ij}\label{espp:objective}\\
+   & \sum_{\makebox[20pt]{$\substack{(i,j) \in \delta^+(i)}$}}x_{ij} - \sum_{\makebox[20pt]{$\substack{(j,i) \in \delta^-(i)}$}}x_{ji} = 
+\begin{cases}
+   1 & \text{if } i = s \\
+   -1 & \text{if } i = t \\
+   0   & \text{else} \end{cases} & \forall i \in V \label{espp:balance}\\
+&\sum_{(i,j) \in \delta^+(i)}x_{ij} \leq 1 & \forall i \in V \label{espp:degree}\\
+&  x_{ij}\in\{0,1\} & \forall (i,j) \in A, \label{espp:integrality}
+\end{align}
+where $c_{ij}\in \mathbb{R}$ are the arc costs, and
+$x_{ij}$ are binary arc variables that take value 1 if the arc $(i,j)$ belongs to the path. 
 
 This formulation, however, is not sufficient to guarantee that the optimal path will be *elementary*.
 
