@@ -48,7 +48,6 @@ class Readers
         {
             int n, m;
             infile >> n >> m;
-            cout << n << " " << m << endl;
 
             for(int k=0;k<n;k++)
             {

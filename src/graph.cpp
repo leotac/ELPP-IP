@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <queue>
 #include "graph.h"
+#include "type.h"
 #include "boost/heap/fibonacci_heap.hpp"
 
 typedef boost::heap::fibonacci_heap<std::pair<double,NODE>, boost::heap::compare<greater<pair<double,NODE>>>> pq_type;
