@@ -116,10 +116,14 @@ class Readers
               G->add_node(i);
               std::getline(infile, line);
               std::stringstream ss(line);
+              
+              if(has_node_weights) //skip node weight, if there
+                 ss >> j;
+
               while(ss >> j)
               {
-                 if(has_node_weights) //skip node weight, if there
-                    ss >> j;
+                 cout << j << "-";
+                 cout << j << endl;
 
                  if( j > n || j < 1) {
                     cout << "Node " << j << " out of bounds." << endl;
@@ -127,7 +131,7 @@ class Readers
                  }
 
                  if(i == j) {
-                    cout << "Self-loop detected." << endl;
+                    cout << "Self-loop " << i << " detected." << endl;
                     return false;
                  }
 
