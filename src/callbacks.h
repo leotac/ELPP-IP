@@ -92,7 +92,7 @@ void StrongComponentLazyCallbackI::main()
                   }
                   catch(IloException e)
                   {
-                     cerr << "Cannot add cut" << endl;
+                     LOG << "Cannot add cut" << endl;
                   }
                }
                else /* sorted, so no further violated ineq exist */
@@ -207,7 +207,7 @@ void ElppCutCallbackI::main()
                   }
                   catch(IloException e)
                   {
-                     cerr << "Cannot add cut" << endl;
+                     LOG << "Cannot add cut" << endl;
                   }
                }
                else /* sorted, so no further violated ineq exist */

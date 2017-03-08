@@ -153,13 +153,17 @@ int main(int argc, char** argv)
        cout << t << " not in graph!" << endl;
        exit(1);
    }
-   
+   if(!G->are_connected(s,t)) {
+       cout << s << "," << t << " are not connected!" << endl;
+       exit(1);
+   }
    cout << "Compute longest path from node " << s << " to node " << t << "." << endl;
    IloEnv env;
    if(pruning) {
        cout << "Before pruning: " << G->num_nodes() << " nodes and " << G->num_arcs() << " arcs." << endl;
        G->prune(s,t);
        cout << "After pruning: " << G->num_nodes() << " nodes and " << G->num_arcs() << " arcs." << endl;
+       G->check();
    }
    ElppSolver elpp_solver = ElppSolver(env, NODE_PAIR(s,t), G, formulation, relax, timelimit, epsilon, max_cuts);
    elpp_solver.update_problem(cost);
