@@ -14,13 +14,11 @@ the Longest Path problem is NP-hard, and related to problems such as the Traveli
 
 Several variants exist: the graph can be weighted or unweighted, directed or undirected.
 The problem is also sometimes known as the Elementary Shortest Path Problem,
-where an elementary (or simple*) path is a path where no node is visited more than once. 
+where an elementary path is a path where no node is visited more than once. 
 Specifying that the path must be elementary hints at the fact that we are solving a problem where
 cycles of negative cost may arise, and we are focusing on paths without cycles.
 
 From now on, I'll stick to the maximization version, and refer to the problem as ELPP (Elementary Longest Path Problem).
-
-*If you want to nitpick, some people may say that simple != elementary.
 
 NP-hardness is no excuse to avoid solving a problem to optimality (or, at least, attempting to!).
 One way to solve ELPP with an exact algorithm, i.e., to **proven global optimality**, 
@@ -60,7 +58,7 @@ Finding a violated constraint is done in polynomial time solving a MinCut proble
 in the support graph defined by the solution.
 
 This kind of formulation is the way to go for similar problems (TSP in primis), and it works quite well also
-for Longest Path problems, as I showed [here](http://www.sciencedirect.com/science/article/pii/S0377221716000084).
+for Longest Path problems.
 
 Installation and usage
 ---
@@ -69,9 +67,10 @@ The class `ElppSolver` provides methods to build and solve a Longest Path proble
 
 Before solving a problem, `update_problem()` must be called once to set the objective function
 (arc costs) and, optionally, bounds on the arc variables.
-This allows the solver to be called repeatedly, more than once, with modifications
-only in the variable bounds and objective coefficients, without the need to rebuild
-the whole model. It also means that the solver can use MIP warm start information.
+This allows the solver to be called repeatedly, with modifications
+only in the variable bounds and/or objective coefficients, without the need to rebuild
+the whole model. It also means that the solver can use MIP warm start information,
+that might be useful is the cost coefficients haven't changed much.
 The possibility to modify the problem and calling it again might be handy in the context, 
 e.g., of a branch-and-price, where the pricing solver has to be called several times.
 
@@ -93,3 +92,26 @@ for students [here](https://ibm.onthehub.com/WebStore/OfferingDetails.aspx?o=9b4
 and for professors or researchers [here](https://ibm.onthehub.com/WebStore/OfferingDetails.aspx?o=6fcc1096-7169-e611-9420-b8ca3a5db7a1).
 
 Requires a compiler with C++11 support. Tested on Linux machines with GCC 4.6 and above.
+
+Using the code/data and citing
+--
+
+Feel free to use/modify this code (that comes with no guarantees :-). 
+If you use it for research, consider citing the 
+[article](http://dx.doi.org/10.1016/j.ejor.2016.01.003) where I used it to compare several Integer Programming formulations.
+This repository also includes the datasets used in the article.
+
+``` tex
+@article{taccari2016espp,
+  title={Integer programming formulations for the elementary shortest path problem},
+  author={Taccari, Leonardo},
+  journal={European Journal of Operational Research},
+  volume={252},
+  number={1},
+  pages={122--130},
+  year={2016},
+  publisher={Elsevier}
+}
+```
+
+A preprint version can be found on Optimization Online [here](http://www.optimization-online.org/DB_FILE/2014/09/4560.pdf).
