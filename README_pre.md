@@ -17,7 +17,6 @@ The problem is also sometimes known as the Elementary Shortest Path Problem,
 where an elementary path is a path where no node is visited more than once. 
 Specifying that the path must be elementary hints at the fact that we are solving a problem where
 cycles of negative cost may arise, and we are focusing on paths without cycles.
-
 From now on, I'll stick to the maximization version, and refer to the problem as ELPP (Elementary Longest Path Problem).
 
 NP-hardness is no excuse to avoid solving a problem to optimality (or, at least, attempting to!).
@@ -39,7 +38,10 @@ The core of a simple IP formulation is as simple as this:
 where $c_{ij}\in \mathbb{R}$ are the arc costs, and
 $x_{ij}$ are binary arc variables that take value 1 if the arc $(i,j)$ belongs to the path. 
 
-This formulation, however, is not sufficient to guarantee that the optimal path will be *elementary*.
+This formulation, if solved to optimality, will typically not give you an *elementary* path: 
+these constraints 
+are not sufficient to avoid the presence of cycles, or subtours, in the graph induced by 
+the value of the variables $x_{ij}$.
 
 There are mainly two ways to ensure this is the case:
 - polynomial-size formulations, that have a size (number of variables and constraints) which is polynomial w.r.t. the size of the graph *G*
@@ -115,3 +117,6 @@ This repository also includes the datasets used in the article.
 ```
 
 A preprint version can be found on Optimization Online [here](http://www.optimization-online.org/DB_FILE/2014/09/4560.pdf).
+
+
+This readme file was generated with [readme2latex](https://github.com/leegao/readme2tex/).
