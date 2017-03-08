@@ -7,7 +7,7 @@ Longest Path problems over directed or undirected graphs.
 The problem
 ---
 
-Given a graph *G*, an origin node *s* and a destination *t*, the Longest Path problem 
+Given a graph *G=(V,A)*, an origin node *s* and a destination *t*, the Longest Path problem 
 requires to find the longest path connecting *s* and *t*.
 Unlike its minimization counterpart, for which well-known polynomial algorithms like Dijkstra exist, 
 the Longest Path problem is NP-hard, and related to problems such as the Traveling Salesman Problem. 
@@ -68,15 +68,19 @@ e.g., of a branch-and-price, where the pricing solver has to be called several t
 
 In addition to the basic Elementary Longest/Shortest Path Problem, it is easy to add additional side constraints
 via the method `add_constraint()`. 
-Although in presence of additional constraints, you might want to consider a specialized algorithm or a customized branch-and-cut,
+Although in presence of additional constraints, you might want to consider a specialized algorithm,
 a simple, out-of-the-box Integer Programming approach can give you pretty good results, and it's extremely flexible.
 
-*External dependencies:* [IBM Cplex Optimizer](https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/), [Boost library](http://www.boost.org), [Lemon graph library](http://lemon.cs.elte.hu/)
+External dependencies
+---
+
+- [IBM Cplex Optimizer](https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/) 
+- [Boost library](http://www.boost.org)
+- [Lemon graph library](http://lemon.cs.elte.hu/)
 
 For Boost and Lemon, please follow the instruction provided on their website.
 For Cplex, if you are a student or faculty (an academic email address should be sufficient), you can get access to the software via their Academic Initiative:
 for students [here](https://ibm.onthehub.com/WebStore/OfferingDetails.aspx?o=9b4eadea-9776-e611-9421-b8ca3a5db7a1)
-and for professors or researchers [here](https://ibm.onthehub.com/WebStore/OfferingDetails.aspx?o=6fcc1096-7169-e611-9420-b8ca3a5db7a1)
+and for professors or researchers [here](https://ibm.onthehub.com/WebStore/OfferingDetails.aspx?o=6fcc1096-7169-e611-9420-b8ca3a5db7a1).
 
-Requires compiler with C++11 support.
-Tested on Linux machines with GCC 4.6 and above.
+Requires a compiler with C++11 support. Tested on Linux machines with GCC 4.6 and above.
